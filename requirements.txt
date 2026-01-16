@@ -1,0 +1,27 @@
+# -----------------------------
+# Core Astronomy & Mathematics
+# -----------------------------
+sgp4>=2.20
+astropy>=5.0,<6.0
+numpy>=1.23,<2.0
+scipy>=1.9,<1.12
+pandas>=1.5,<2.2
+poliastro>=0.17.0
+
+# -----------------------------
+# Web Framework & API
+# -----------------------------
+fastapi>=0.95,<0.111
+pydantic>=1.10,<2.0
+uvicorn>=0.22.0
+httpx>=0.24
+
+# -----------------------------
+# Development & Analysis
+# -----------------------------
+pytest>=7.0
+jupyterlab>=3.6,<4.0
+skyfield>=1.45,<1.55
+
+joblib>=1.2,<1.5
+scikit-learn>=1.2,<1.6
