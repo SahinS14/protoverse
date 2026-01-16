@@ -19,26 +19,24 @@ This is a **decision-support system**, not a game or animation.
 
 ## 🛰️ MVP System Flow
 
-```
+A **real-time satellite collision prediction and decision-support system**. This project utilizes orbital propagation and physics-based modeling to detect conjunction events and visualize avoidance maneuvers via an interactive Mission Control dashboard.
 Satellite Orbital Data (TLE)
 ↓
 Orbit Propagation
-↓
 Trajectory Prediction
 ↓
 Collision Risk Detection
-↓
-Avoidance Logic
-↓
-Mission Control Dashboard
-
+* **🛰️ Orbit Propagation:** Predicts future satellite trajectories based on TLE data.
+* **💥 Collision Detection:** Identifies potential conjunction events (close approaches) in real-time.
+* **🛡️ Avoidance Logic:** Computes safe vs. unsafe paths to assist operators.
+* **🖥️ Interactive Dashboard:** A Mission Control-style interface to visualize decisions.
+* **🧠 AI-Ready:** Architecture designed to integrate Reinforcement Learning models in future iterations.
 ```++++++++++++++++++++++++++++++++++++++++++++++++
-
 ---
 
 ## 🖥️ Mission Control Dashboard
 
-The dashboard enables operators to:
+The system follows a strict pipeline from raw orbital data to visual decision support:
 - Adjust maneuver parameters
 - Toggle autonomous avoidance logic
 - View predicted orbital paths
@@ -51,7 +49,6 @@ All visuals are generated from **computed physical state data**.
 
 ## 🧱 Project Structure
 
-```
 
 collison/
 ├── collison/              # Core simulation & collision logic
@@ -59,17 +56,11 @@ collison/
 ├── gui/                   # Web-based dashboard
 │   ├── app.py
 │   ├── simulator_bridge.py
-│   ├── visuals.py
 │   └── **init**.py
 ├── requirements.txt
-├── setup.py
+The web-based dashboard serves as the central interface for operators.
 └── README.md
 
-````
-
----
-
-## 🧰 Tech Stack
 
 ### Core
 ![Python](https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=white)
@@ -78,7 +69,6 @@ collison/
 
 ### Orbital Mechanics
 ![Orbit](https://img.shields.io/badge/Orbital%20Propagation-SGP4-darkblue)
-![Data](https://img.shields.io/badge/Data-TLE-lightgrey)
 
 ### Visualization & UI
 ![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?logo=streamlit&logoColor=white)
@@ -96,7 +86,6 @@ collison/
 **Offline**
 - Scenario generation
 - Dataset creation
-- Model training (future scope)
 
 **Online**
 - Orbit propagation
@@ -121,7 +110,6 @@ streamlit run gui/app.py
 * Stateless computation pipeline
 * Deployable on:
 
-  * Streamlit Cloud
   * Hugging Face Spaces
   * Local ground-station systems
 
@@ -130,16 +118,10 @@ streamlit run gui/app.py
 ## 🚧 Current Status
 
 * ✅ Physics-based collision detection
-* ✅ Interactive mission control dashboard
 * ✅ Real satellite TLE ingestion from CelesTrak
 * ✅ ML model planned (architecture ready) 
 
----
-
-## 🔮 Roadmap
-
 * Reinforcement Learning–based avoidance policy
-* Real satellite selection (ISS / Indian satellites)
 * Multi-satellite collision analysis
 * 3D orbital visualization
 
@@ -147,13 +129,11 @@ streamlit run gui/app.py
 
 ## ⚠️ Disclaimer
 
-This project uses **public orbital tracking data** and physics-based simulation for research and demonstration purposes only.
 No classified or restricted satellite telemetry is used.
 
 ---
 
 ## 🏁 Note
-
 This project emphasizes **system design, explainability, and decision support**, demonstrating how collision risks can be evaluated before executing real satellite maneuvers.
 
 ```
