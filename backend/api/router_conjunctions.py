@@ -8,6 +8,10 @@ router = APIRouter(prefix="/conjunctions", tags=["Conjunction Analysis"])
 
 
 class ConjunctionAlertSchema(BaseModel):
+        """
+        Schema for representing a conjunction alert event between two satellites.
+        Includes satellite IDs, names, time of closest approach, miss distance, relative velocity, score, and event type.
+        """
     id: int
     sat1_id: int
     sat1_name: str
@@ -22,6 +26,10 @@ class ConjunctionAlertSchema(BaseModel):
 
 
 class ScreeningResponse(BaseModel):
+        """
+        Response schema for the collision screening endpoint.
+        Indicates the status, number of processed satellite pairs, and number of alerts saved.
+        """
     status: str
     processed_pairs: int
     alerts_saved: int
@@ -30,8 +38,9 @@ class ScreeningResponse(BaseModel):
 @router.post("/run-screening", response_model=ScreeningResponse)
 async def run_screening():
     """
-    Manually triggers the collision screening.
-    Scans a 2-hour window starting from the current time.
+    Manually triggers the collision screening process.
+    This endpoint scans a 2-hour window starting from the current time and processes all satellite pairs for potential conjunctions.
+    Returns the number of processed pairs and alerts saved.
     """
     try:
         result = conjunction_service.run_conjunction_screening()
@@ -47,7 +56,10 @@ async def run_screening():
 @router.get("/alerts", response_model=List[ConjunctionAlertSchema])
 async def get_latest_alerts(limit: int = 20, type: str = "COLLISION"):
     """
-    Retrieves alerts from the database.
-    type param: 'COLLISION' or 'DOCKING'
+    Retrieves the latest conjunction alerts from the database.
+    Parameters:
+        limit: Maximum number of alerts to return (default: 20)
+        type: Type of event ('COLLISION' or 'DOCKING')
+    Returns a list of conjunction alert events.
     """
     return conjunction_service.get_alerts(limit, event_type=type)
