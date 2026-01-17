@@ -309,18 +309,22 @@ function renderSatTable(data) {
         return;
     }
     data.forEach(s => {
+        const isCritical = s.mission_priority === 'CRITICAL';
         tbody.innerHTML += `
-                    <tr>
-                        <td class="font-mono small">${s.id}</td>
-                        <td class="fw-bold">${s.sat_name}</td>
-                        <td class="small">${s.source || 'N/A'}</td>
-                        <td>
-                            <button class="btn btn-sm btn-outline-info" onclick="goToMapWithSat(${s.id}, '${s.sat_name}')">
-                                <i class="fas fa-eye"></i> İncele
-                            </button>
-                        </td>
-                    </tr>
-                `;
+            <tr${isCritical ? ' class="critical-row"' : ''}>
+                <td class="font-mono small">${s.id}</td>
+                <td class="fw-bold">
+                    ${s.sat_name}
+                    ${isCritical ? '<span class="badge badge-critical ms-2">MISSION CRITICAL</span>' : ''}
+                </td>
+                <td class="small">${s.source || 'N/A'}</td>
+                <td>
+                    <button class="btn btn-sm btn-outline-info" onclick="goToMapWithSat(${s.id}, '${s.sat_name}')">
+                        <i class="fas fa-eye"></i> View
+                    </button>
+                </td>
+            </tr>
+        `;
     });
 }
 
@@ -372,37 +376,56 @@ async function loadAlerts() {
             }
 
             const actionButtons = a.event_type === 'DOCKING'
-                ? `<button class="btn btn-sm btn-outline-info" onclick="visualizeConjunction(${a.sat1_id}, '${a.sat1_name}', ${a.sat2_id}, '${a.sat2_name}', '${a.tca}')"><i class="fas fa-eye me-1"></i> İzle</button>`
+                ? `<button class="btn btn-sm btn-outline-info" onclick="visualizeConjunction(${a.sat1_id}, '${a.sat1_name}', ${a.sat2_id}, '${a.sat2_name}', '${a.tca}')"><i class="fas fa-eye me-1"></i> View</button>`
                 : `<div class="btn-group">
-                                <button class="btn btn-sm btn-outline-info" onclick="visualizeConjunction(${a.sat1_id}, '${a.sat1_name}', ${a.sat2_id}, '${a.sat2_name}', '${a.tca}')"><i class="fas fa-eye"></i></button>
-                                <button class="btn btn-sm btn-outline-warning" onclick='openManeuverModal(${JSON.stringify(a)})'><i class="fas fa-tools"></i></button>
-                           </div>`;
+                        <button class="btn btn-sm btn-outline-info" onclick="visualizeConjunction(${a.sat1_id}, '${a.sat1_name}', ${a.sat2_id}, '${a.sat2_name}', '${a.tca}')"><i class="fas fa-eye"></i></button>
+                        <button class="btn btn-sm btn-outline-warning" onclick='openManeuverModal(${JSON.stringify(a)})'><i class="fas fa-tools"></i></button>
+                   </div>`;
 
             tbody.innerHTML += `
-                        <tr class="animate__animated animate__fadeIn">
-                            <td><span class="badge ${badgeClass}">${a.event_type === 'DOCKING' ? 'FORMATION' : (a.score * 100).toFixed(0) + '%'}</span></td>
-                            <td>
-                                <div class="fw-bold">${a.sat1_name}</div>
-                                <div class="small font-mono">${a.sat1_id}</div>
-                            </td>
-                            <td>
-                                <div class="fw-bold">${a.sat2_name}</div>
-                                <div class="small  font-mono">${a.sat2_id}</div>
-                            </td>
-                            <td class="font-mono small">${new Date(a.tca).toLocaleString()}</td>
-                            <td class="fw-bold ${a.event_type === 'DOCKING' ? 'text-info' : 'text-danger'} font-mono">${a.miss_distance_km.toFixed(4)} km</td>
-                            <td>${a.event_type === 'DOCKING'
-                    ? `<button class=\"btn btn-sm btn-outline-info\" onclick=\"visualizeConjunction(${a.sat1_id}, '${a.sat1_name}', ${a.sat2_id}, '${a.sat2_name}', '${a.tca}')\"><i class=\"fas fa-eye me-1\"></i> View</button>`
-                    : `<div class=\"btn-group\">
-                                        <button class=\"btn btn-sm btn-outline-info\" onclick=\"visualizeConjunction(${a.sat1_id}, '${a.sat1_name}', ${a.sat2_id}, '${a.sat2_name}', '${a.tca}')\"><i class=\"fas fa-eye\"></i></button>
-                                        <button class=\"btn btn-sm btn-outline-warning\" onclick='openManeuverModal(${JSON.stringify(a)})'><i class=\"fas fa-tools\"></i></button>
-                                   </div>`}
-                            </td>
-                        </tr>
-                    `;
+                <tr class="animate__animated animate__fadeIn">
+                    <td><span class="badge ${badgeClass}">${a.event_type === 'DOCKING' ? 'FORMATION' : (a.score * 100).toFixed(0) + '%'}</span></td>
+                    <td>
+                        <div class="fw-bold">${a.sat1_name}</div>
+                        <div class="small font-mono">${a.sat1_id}</div>
+                    </td>
+                    <td>
+                        <div class="fw-bold">${a.sat2_name}</div>
+                        <div class="small  font-mono">${a.sat2_id}</div>
+                    </td>
+                    <td class="font-mono small">${new Date(a.tca).toLocaleString()}</td>
+                    <td class="fw-bold ${a.event_type === 'DOCKING' ? 'text-info' : 'text-danger'} font-mono">${a.miss_distance_km.toFixed(4)} km</td>
+                    <td>${actionButtons}</td>
+                </tr>
+            `;
         });
     } catch (e) { console.error(e); }
 }
+// Mission context display
+let missionContext = null;
+async function fetchMissionContext() {
+    try {
+        const res = await fetch(`${API_BASE}/mission/context`);
+        if (res.ok) {
+            missionContext = await res.json();
+            renderMissionContext();
+        }
+    } catch (e) { }
+}
+
+function renderMissionContext() {
+    const el = document.getElementById('mission-context-bar');
+    if (!el) return;
+    if (missionContext && missionContext.status === 'activated') {
+        el.innerHTML = `<span class='badge badge-critical me-2'>MISSION CRITICAL MODE ACTIVE</span> <span class='fw-bold'>Region:</span> ${missionContext.region} <span class='fw-bold ms-2'>Reason:</span> ${missionContext.reason}`;
+        el.style.display = 'block';
+    } else {
+        el.innerHTML = '';
+        el.style.display = 'none';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', fetchMissionContext);
 
 function openManeuverModal(alertData) {
     selectedAlert = alertData;

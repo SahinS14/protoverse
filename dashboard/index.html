@@ -18,6 +18,7 @@
 
 <body>
     <div class="stars"></div>
+    <div id="mission-context-bar"></div>
     <div id="toast-container"></div>
 
     <div id="loadingOverlay">
@@ -173,25 +174,26 @@
                         Formation</label>
                 </div>
 
-                <button class="btn btn-success btn-sm ms-2" onclick="loadAlerts()"><i
-                    class="fas fa-redo me-2"></i><span data-lang="refresh"></span></button>
+                <button class="btn btn-success btn-sm ms-2" onclick="loadAlerts()"><i class="fas fa-redo me-2"></i><span
+                        data-lang="refresh"></span></button>
             </div>
 
             <div id="conj-card" class="card-glass border-danger border-opacity-25">
                 <div class="card-header-glass text-danger" id="conj-header-text">
-                    <span><i class="fas fa-exclamation-triangle me-2"></i><span data-lang="critical_close_approaches"></span></span>
+                    <span><i class="fas fa-exclamation-triangle me-2"></i><span
+                            data-lang="critical_close_approaches"></span></span>
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
                         <table class="table table-space table-hover align-middle mb-0">
                             <thead>
                                 <tr>
-                                        <th data-lang="risk"></th>
-                                        <th data-lang="primary"></th>
-                                        <th data-lang="secondary"></th>
-                                        <th data-lang="tca_utc"></th>
-                                        <th data-lang="miss_distance"></th>
-                                        <th data-lang="action"></th>
+                                    <th data-lang="risk"></th>
+                                    <th data-lang="primary"></th>
+                                    <th data-lang="secondary"></th>
+                                    <th data-lang="tca_utc"></th>
+                                    <th data-lang="miss_distance"></th>
+                                    <th data-lang="action"></th>
                                 </tr>
                             </thead>
                             <tbody id="conj-table-body"></tbody>
@@ -203,9 +205,10 @@
 
         <div id="map-view" class="content-section d-none animate__animated animate__fadeIn">
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h3 class="fw-light m-0"><i class="fas fa-globe-asia text-info me-2"></i><span data-lang="orbit_simulation"></span></h3>
+                <h3 class="fw-light m-0"><i class="fas fa-globe-asia text-info me-2"></i><span
+                        data-lang="orbit_simulation"></span></h3>
                 <div>
-                        <button class="btn btn-sm btn-outline-light me-2" onclick="clearMap()"><i
+                    <button class="btn btn-sm btn-outline-light me-2" onclick="clearMap()"><i
                             class="fas fa-trash me-1"></i><span data-lang="clear_map"></span></button>
                     <span class="badge bg-secondary" data-lang="live"></span>
                 </div>
