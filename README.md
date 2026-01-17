@@ -1,3 +1,25 @@
+## 🚨 Critical Mission Mode
+
+AstroGuard now supports a "Critical Mission Mode" to prioritize the protection of mission-critical satellites during real-world disaster scenarios (e.g., cyclones, regional emergencies).
+
+**How it works:**
+- Satellites can be marked as `CRITICAL` via the API or dashboard (e.g., POST /mission/activate).
+- When active, the system applies stricter safety constraints (1.5x miss distance) for any conjunction or maneuver involving a CRITICAL satellite.
+- CRITICAL satellites are visually highlighted in the dashboard (red/orange glow, "MISSION CRITICAL" badge).
+- The dashboard displays the active mission context (region and reason).
+- Judges and users can activate/deactivate this mode for demo and testing.
+
+**Rationale:**
+Critical Mission Mode ensures that space-based services vital to disaster response, communications, or national security receive the highest level of protection during emergencies. This context-aware feature makes the system mission-driven, not just technical.
+
+**Demo Safety:**
+- All triggers are simulated; no live disaster APIs are required.
+- The system remains deterministic and stable for demonstration purposes.
+
+**API Endpoints:**
+- `POST /mission/activate` — Activate Critical Mission Mode (provide region and reason)
+- `POST /mission/deactivate` — Deactivate Critical Mission Mode
+- `GET /mission/context` — Get current mission context
 
 # 🚀 AstroGuard
 ## Autonomous Space Traffic Management & Collision Avoidance Platform
