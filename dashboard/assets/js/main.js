@@ -448,7 +448,7 @@ async function calculateManeuver() {
             document.getElementById('maneuver-result').classList.remove('alert-dark');
             document.getElementById('maneuver-result').classList.add('alert-danger');
 
-            document.getElementById('res-msg').innerText = "HATA: " + (result.error_detail || result.message);
+            document.getElementById('res-msg').innerText = "ERROR: " + (result.error_detail || result.message);
             document.getElementById('res-burn').innerText = "-";
             document.getElementById('res-dv').innerText = "-";
             document.getElementById('res-dist').innerText = "-";
@@ -456,12 +456,12 @@ async function calculateManeuver() {
 
     } catch (e) {
         showLoading(false);
-        alert("Hata: " + e);
+        alert("Error: " + e);
     }
 }
 
 async function updateTLEs() {
-    showLoading(true, "Celestrak data retrieving");
+    showLoading(true, "Retrieving Celestrak data...");
     try {
         const res = await fetch(`${API_BASE}/tle/refresh`, { method: 'POST' });
         const data = await res.json();
@@ -488,7 +488,7 @@ async function loadDashboardStats() {
         if (healthRes.ok) {
             const healthData = await healthRes.json();
             document.getElementById('stat-sys-health').innerText = healthData.status || "OK";
-            document.getElementById('stat-sys-msg').innerHTML = '<i class="fas fa-check-circle"></i> Session Aktif';
+            document.getElementById('stat-sys-msg').innerHTML = '<i class="fas fa-check-circle"></i> Session Active';
             document.getElementById('stat-sys-health').classList.replace('text-danger', 'text-info');
         } else {
             throw new Error("API Error");
@@ -496,7 +496,7 @@ async function loadDashboardStats() {
     } catch (e) {
         document.getElementById('stat-sys-health').innerText = "ERR";
         document.getElementById('stat-sys-health').className = "display-5 fw-bold text-danger my-2";
-        document.getElementById('stat-sys-msg').innerHTML = '<i class="fas fa-times-circle"></i> API Bağlantı Hatası';
+        document.getElementById('stat-sys-msg').innerHTML = '<i class="fas fa-times-circle"></i> API Connection Error';
     }
 
     try {
@@ -515,7 +515,7 @@ async function loadDashboardStats() {
         const tbody = document.getElementById('dashboard-alerts-body');
         tbody.innerHTML = "";
         if (alerts.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="4" class="text-center">Aktif uyarı yok.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="4" class="text-center">No active alerts.</td></tr>`;
         } else {
             alerts.forEach(a => {
                 tbody.innerHTML += `
@@ -529,22 +529,22 @@ async function loadDashboardStats() {
         }
     } catch (e) {
         document.getElementById('stat-alert-count').innerText = "!";
-        document.getElementById('dashboard-alerts-body').innerHTML = `<tr><td colspan="4" class="text-danger text-center">Veri alınamadı</td></tr>`;
+        document.getElementById('dashboard-alerts-body').innerHTML = `<tr><td colspan="4" class="text-danger text-center">Data could not be retrieved</td></tr>`;
     }
 }
 
 
 async function trainSSA() {
-    showLoading(true, "Yapay Zeka Modeli Eğitiliyor... (UCS Database)");
+    showLoading(true, "AI Model Training... (UCS Database)");
     try {
         const res = await fetch(`${API_BASE}/ssa/train`, {
             method: 'POST'
         });
         const data = await res.json();
-        alert("Başarılı: " + data.message);
+        alert("Success: " + data.message);
     } catch (e) {
-        console.error("Eğitim Hatası:", e);
-        alert("Model eğitilirken bir hata oluştu. Backend loglarını kontrol edin.");
+        console.error("Training Error:", e);
+        alert("An error occurred during model training. Check backend logs.");
     } finally {
         showLoading(false);
     }
@@ -682,7 +682,7 @@ async function loadPerformanceReport() {
             data: {
                 labels: ['Accuracy', 'F1-Score', 'ROC AUC', 'Recall (Avg)', 'Precision (Avg)'],
                 datasets: [{
-                    label: 'Performans Değerleri',
+                    label: 'Performance Metrics',
                     data: [
                         data.accuracy,
                         data.f1_score,
