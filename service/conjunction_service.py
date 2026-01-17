@@ -11,34 +11,34 @@ from processing.conjunction import compute_conjunction_for_pair
 
 class ConjunctionService:
     """
-    Bu servis, tüm Çarpışma Analizi (Conjunction Assessment) sürecini yönetir.
-    Veriyi alır, işler, filtreler ve sonucu veritabanına yazar.
+    This service manages the entire Conjunction Assessment process.
+    It receives, processes, filters the data, and writes the result to the database.
     """
 
     def run_conjunction_screening(self, analysis_start_time: datetime = None, duration_hours: int = 2) -> Dict[
         str, int]:
         """
-        Ana Tarama Fonksiyonu (Screening Loop).
-            1. Aktif uyduları çeker.
-            2. KD-Tree ile aday çiftleri bulur (Broad Phase).
-            3. SGP4 ve Optimizasyon ile detaylı analiz yapar (Narrow Phase).
-            4. Riskli durumları veritabanına kaydeder.
+        Main Screening Function (Screening Loop).
+            1. Fetches active satellites.
+            2. Finds candidate pairs using KD-Tree (Broad Phase).
+            3. Performs detailed analysis with SGP4 and Optimization (Narrow Phase).
+            4. Saves risky situations to the database.
         """
 
         if analysis_start_time is None:
-            # analiz başlangıç zamanı belirtilmemişse şu anı al utc
+            # If analysis start time is not specified, use current UTC time
             analysis_start_time = datetime.now(timezone.utc)
 
-        # Aktif uyduları getir
+        # Get active satellites
         satellites = tle_service.get_all_satellites(limit=5000)
         if len(satellites) < 2:
-            return {"status": "Yeterli uydu yok", "processed_pairs": 0, "alerts_saved": 0}
+            return {"status": "Not enough satellites", "processed_pairs": 0, "alerts_saved": 0}
 
-        satrecs = {}  # SGP4 nesnelerini tutacak
-        states_map = {}  # uyduların t0 anındaki konum/hız verilerini tutacak
+        satrecs = {}  # Will hold SGP4 objects
+        states_map = {}  # Will hold position/velocity data of satellites at t0
 
-        # Başlangıç Durumlarının Hesaplanması
-        # KD-Tree kurabilmek için tüm uyduların t0 anındaki konumlarını bilmemiz gerekir
+        # Calculate Initial States
+        # To build the KD-Tree, we need the positions of all satellites at t0
         for sat in satellites:
             sid = sat["id"]
             try:
@@ -52,32 +52,33 @@ class ConjunctionService:
                 continue
 
         if len(states_map) < 2:
-            return {"status": "Yetersiz sayıda veri", "processed_pairs": 0, "alerts_saved": 0}
+            return {"status": "Insufficient data", "processed_pairs": 0, "alerts_saved": 0}
 
-        # Budama - Pruning Aşaması - Broad Phase Detection
-        # KD-Tree kullanılacak
-        ANALYTIC_WINDOW = 7200.0  # 2 saatlik bir pencereye bakacağız
-        RADIUS_KM = 300.0  # Sadece birbirine 300km yakın olanlar incelenecek
-        COLLISION_SAVE_THRESHOLD_KM = 150.0  # 150 km den uzaksa veritabanına kaydedilmeyecek
+        # Pruning Phase - Broad Phase Detection
+        # KD-Tree will be used
+        ANALYTIC_WINDOW = 7200.0  # We will look at a 2-hour window
+        RADIUS_KM = 300.0  # Only those within 300km of each other will be considered
+        COLLISION_SAVE_THRESHOLD_KM = 150.0  # If farther than 150km, will not be saved to DB
 
-        # sadece konum verilerini (r) alarak KD-Tree ye veriyoruz
+        # Only position data (r) is given to the KD-Tree
         positions_map = {k: v[0] for k, v in states_map.items()}
 
-        # prune_pairs fonksiyonu bize sadece riskli olabilecek çiftleri (id1, id2) döner
-        # Örn: 5000 uydu için 12.5 milyon çift yerine sadece 500 çift döner.
+        # prune_pairs function returns only potentially risky pairs (id1, id2)
+        # For example: Instead of 12.5 million pairs for 5000 satellites, only about 500 pairs are returned.
         candidate_pairs = prune_pairs(positions_map, radius_km=RADIUS_KM)
 
         conn = get_conn()
         cur = conn.cursor()
 
-        # Demo amaçlı her taramada eski alarmları temizliyoruz
-        # Gerçek bir uygulamada burası 'archive' tablosuna taşınmalıdır
+        # For demo purposes, we clear old alerts on each scan
+        # In a real application, this should be moved to an 'archive' table
         cur.execute("DELETE FROM conjunction_alerts")
         conn.commit()
         saved_count = 0
 
-        # Aday çiftler üzerinde detaylı analiz, Narrow Phase
-        # sadece filtrelenmiş aday çiftler üzerinde SGP4 ve Optimizasyon çalıştırılacak
+
+        # Detailed analysis on candidate pairs, Narrow Phase
+        # SGP4 and Optimization will only be run on filtered candidate pairs
         for id1, id2 in candidate_pairs:
             if id1 not in satrecs or id2 not in satrecs:
                 continue
@@ -88,7 +89,7 @@ class ConjunctionService:
             r2, v2 = states_map[id2]
 
             try:
-                # Analitik Tahmin -> SGP4 Refinement -> Docking Kontrolü
+                # Analytical Prediction -> SGP4 Refinement -> Docking Check
                 conj = compute_conjunction_for_pair(
                     sat1, sat2,
                     analysis_start_time,
@@ -103,14 +104,14 @@ class ConjunctionService:
             if conj is None:
                 continue
 
-            # Sonuçların Kaydedilmesi (Persistence)
+            # Save Results (Persistence)
             should_save = False
-            # DOCKING: Kenetlenme manevralarını kaydet (arayüzde ayrı bölümü açıldığı için)
+            # DOCKING: Save docking maneuvers (since there is a separate section in the interface)
             if conj.event_type == "DOCKING":
                 should_save = True
             elif conj.event_type == "COLLISION":
-                # Score > 0 demek belirli bir risk var demek
-                # Ayrıca mesafe eşiğinin (150 km) altında olmalı
+                # Score > 0 means there is a certain risk
+                # Also, distance must be below the threshold (150 km)
                 if conj.score > 0 and conj.miss_distance_km < COLLISION_SAVE_THRESHOLD_KM:
                     should_save = True
 
@@ -133,13 +134,13 @@ class ConjunctionService:
         conn.commit()
         conn.close()
 
-        # APIye dönülecek özet rapor
+        # Summary report to be returned to the API
         return {"processed_pairs": len(candidate_pairs), "alerts_saved": saved_count}
 
     def get_alerts(self, limit: int = 20, event_type: str = "COLLISION") -> List[Dict[str, Any]]:
         """
-        Veritabanından alarmları çeker.
-        SQL JOIN kullanarak Satellite tablosundan uydu isimlerini de getirir.
+        Fetches alerts from the database.
+        Uses SQL JOIN to also get satellite names from the Satellite table.
         """
         conn = get_conn()
         cur = conn.cursor()
@@ -157,9 +158,9 @@ class ConjunctionService:
         cur.execute(query, (event_type, limit))
         rows = cur.fetchall()
         conn.close()
-        # Row objelerini dictionarye çevirerek JSON uyumlu hale getir
+        # Convert row objects to dictionary for JSON compatibility
         return [dict(row) for row in rows]
 
 
-# Singleton instance (Servis tek bir örnek olarak başlatılır)
+# Singleton instance (Service is started as a single instance)
 conjunction_service = ConjunctionService()
