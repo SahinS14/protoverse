@@ -14,8 +14,8 @@ from backend.models.db import get_conn
 
 class SSAService:
     """
-    Uzay Durum Farkındalığı (SSA) Analiz Servisi
-    Bu sınıf ham TLE verilerini kullanarak uyduların davranışlarını ve amaçlarını analiz eder.
+    Space Situational Awareness (SSA) Analysis Service
+    This class analyzes the behaviors and purposes of satellites using raw TLE data.
     """
 
     def __init__(self):
@@ -25,28 +25,28 @@ class SSAService:
         self.model = None
         self.kmeans = None
         self.iso_forest = None
-        self.label_encoder = LabelEncoder()  # Kategorik verileri sayısal verilere dönüştürür
-        self.scaler = StandardScaler()  # Verileri standart normal dağılıma (0 ortalama, 1 sapma) çeker
+        self.label_encoder = LabelEncoder()  # Converts categorical data to numerical data
+        self.scaler = StandardScaler()  # Scales data to standard normal distribution (mean 0, std 1)
 
         """
-        Problem: Uzayda binlerce aktif/pasif nesne bulunmaktadır. Bu nesnelerin ham yörünge 
-        parametrelerine (TLE) bakarak, hangi amaçla (Haberleşme, Gözlem vb.) kullanıldığını 
-        tahmin etmek ve normal dışı (anomali) hareket edenleri saptamak temel problemimizdir.
+        Problem: There are thousands of active/passive objects in space. By looking at their raw orbital
+        parameters (TLE), our main problem is to predict for what purpose (Communication, Observation, etc.)
+        they are used and to detect those that move abnormally (anomalies).
         """
 
-        # yörünge rejimi etiketleri
+        # Orbit regime labels
         self.REGIME_MAP = {
-            0: "LEO - Düşük Yörünge (Yüksek Trafik)",
-            1: "MEO - Orta Yörünge (Navigasyon)",
-            2: "GEO - Yer Sabit (Haberleşme Kuşağı)",
-            3: "HEO - Yüksek Eliptik (Stratejik)",
-            4: "VLEO - Çok Alçak Yörünge"
+            0: "LEO - Low Earth Orbit (High Traffic)",
+            1: "MEO - Medium Earth Orbit (Navigation)",
+            2: "GEO - Geostationary (Communication Belt)",
+            3: "HEO - Highly Elliptical (Strategic)",
+            4: "VLEO - Very Low Earth Orbit"
         }
 
     def parse_bstar(self, line1):
         """
-        TLE Line 1 içindeki B* (BSTAR) sürüklenme katsayısını ayrıştırır.
-        Bu değer uydunun atmosferik dirençten ne kadar etkilendiğini gösterir.
+        Parses the B* (BSTAR) drag coefficient from TLE Line 1.
+        This value shows how much the satellite is affected by atmospheric drag.
         """
         try:
             # Boşlukları temizle ve formatı düzelt (Örn: " 12345-3" -> "0.12345e-3")
@@ -65,22 +65,22 @@ class SSAService:
 
     def train_model(self):
         """
-        Kaynak: Union of Concerned Scientists (UCS) Uydu Veri Seti.
-        Bu veri seti Dünya yörüngesindeki yaklaşık 7.500 aktif uyduya ait teknik (kütle, güç, fırlatma tarihi),
-        yörünge (apoj, perij, eğim, yörünge türü) ve operasyonel (ülke, operatör, kullanım amacı) bilgileri içeren,
-        uzay varlıklarının dağılımı ve kullanım alanlarının analizine uygun kapsamlı bir veri setidir.
+        Source: Union of Concerned Scientists (UCS) Satellite Dataset.
+        This dataset contains technical (mass, power, launch date), orbital (apogee, perigee, inclination, orbit type),
+        and operational (country, operator, purpose) information for about 7,500 active satellites in Earth's orbit,
+        making it a comprehensive dataset suitable for analyzing the distribution and usage of space assets.
         https://www.kaggle.com/datasets/mexwell/ucs-satellite-database/data
         """
         if not self.data_path.exists():
             return "Hata: Veri seti bulunamadı."
 
         try:
-            # Ön İşleme
-            # Ham verideki sayısal hataları, noktalama yanlışlarını ve eksik değerleri temizliyoruz.
+            # Preprocessing
+            # Cleans numerical errors, punctuation mistakes, and missing values in the raw data.
             df = pd.read_csv(self.data_path, sep=';', on_bad_lines='skip', low_memory=False, encoding='latin-1')
             df.columns = [c.strip() for c in df.columns]
 
-            # Sütun isimlerini daha yönetilebilir hale getirme (Mapping)
+            # Make column names more manageable (Mapping)
             mapping = {
                 'Purpose': 'Purpose',
                 'Inclination (degrees)': 'Inclination',
@@ -91,97 +91,97 @@ class SSAService:
             }
             df = df.rename(columns=mapping)
 
-            # Özellik Seçimi, en açıklayıcı 5 fiziksel parametre
-            # Uydu amacını belirlemede en etkili fiziksel parametreler seçilmiştir:
-            # Eğim (Inclination), Basıklık (Eccentricity), Periyot ve İrtifa değerleri.
+            # Feature Selection, the 5 most explanatory physical parameters
+            # The most effective physical parameters for determining satellite purpose are selected:
+            # Inclination, Eccentricity, Period, and Altitude values.
             features = ['Inclination', 'Eccentricity', 'Period_minutes', 'Perigee', 'Apogee']
 
 
             for col in features:
-                # Veri setindeki virgülleri noktaya çevirip sayısal tipe dönüştürme
+                # Convert commas to dots and cast to numeric type in the dataset
                 df[col] = df[col].astype(str).str.replace(',', '').str.replace('"', '')
                 df[col] = pd.to_numeric(df[col], errors='coerce')
 
-            # Eksik verileri (NaN) temizle ve hedef değişkeni etiketle
+            # Clean missing data (NaN) and label the target variable
             df = df[['Purpose'] + features].dropna()
 
-            # Eğitim kararlılığı için sadece 1 örneği olan nadir sınıfları çıkarıyoruz
+            # For training stability, remove rare classes with only 1 example
             df = df[df.groupby('Purpose')['Purpose'].transform('count') > 1]
 
             X = df[features]  # Girdi özellikleri
             y = self.label_encoder.fit_transform(df['Purpose'].astype(str))  # Hedef değişken
 
-            # Random Forest algoritması kullanılmıştır - %80 Eğitim, %20 Test
-            # Bu problemde uyduların kullanım amaçları (Kategorik hedef) ile yörünge parametreleri (Sayısal girdiler) arasındaki
-            # ilişki doğrusal olmayabilir. Örneğin casus uydular ile meteoroloji uyduları benzer irtifalarda (LEO) olabilir
-            # ancak eğimleri (Inclination) farklıdır. Random Forest, bu karmaşık karar ağaçlarını başarıyla modeller.
+            # Random Forest algorithm is used - 80% Training, 20% Test
+            # In this problem, the relationship between satellite purposes (categorical target) and orbital parameters (numerical inputs)
+            # may not be linear. For example, spy satellites and meteorological satellites may be at similar altitudes (LEO)
+            # but have different inclinations. Random Forest successfully models these complex decision trees.
             X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
             self.model = RandomForestClassifier(n_estimators=200, class_weight='balanced', random_state=42)
             self.model.fit(X_train, y_train)
 
-            # Performans Metrikleri
+            # Performance Metrics
             y_pred = self.model.predict(X_test)
             y_prob = self.model.predict_proba(X_test)
 
             try:
-                # Çok sınıflı ROC-AUC skoru
+                # Multi-class ROC-AUC score
                 roc_auc = roc_auc_score(y_test, y_prob, multi_class='ovr', average='weighted')
             except:
                 roc_auc = 0.0
 
             metrics = {
-                "accuracy": accuracy_score(y_test, y_pred),  # Genel doğruluk oranı
-                "f1_score": f1_score(y_test, y_pred, average='weighted'),  # Dengesiz sınıflar için hassasiyet metriği
+                "accuracy": accuracy_score(y_test, y_pred),  # Overall accuracy rate
+                "f1_score": f1_score(y_test, y_pred, average='weighted'),  # Sensitivity metric for imbalanced classes
                 "roc_auc": roc_auc,
                 "confusion_matrix": confusion_matrix(y_test, y_pred).tolist(),
                 "classes": self.label_encoder.classes_.tolist(),
-                "feature_importance": dict(zip(features, self.model.feature_importances_.tolist())),  # Hangi özellik daha önemli?
-                "classification_report": classification_report(y_test, y_pred, output_dict=True),  # Detaylı rapor
+                "feature_importance": dict(zip(features, self.model.feature_importances_.tolist())),  # Which feature is more important?
+                "classification_report": classification_report(y_test, y_pred, output_dict=True),  # Detailed report
                 "sample_size": len(df),
                 "timestamp": datetime.now().isoformat()
             }
 
-            # Metrikleri JSON dosyasına kaydet
+            # Save metrics to JSON file
             with open(self.metrics_path, "w") as f:
                 json.dump(metrics, f)
 
-            # Kümeleme (K-Means) ve Anomali Tespiti (Isolation Forest)
-            # Veriyi ölçeklendirip uyduları gruplandırıyoruz ve normal dışı olanları yakalıyoruz.
+            # Clustering (K-Means) and Anomaly Detection (Isolation Forest)
+            # Scale the data, group satellites, and catch outliers.
             kmeans = KMeans(n_clusters=5, random_state=42).fit(self.scaler.fit_transform(X))
             iso_forest = IsolationForest(contamination=0.03, random_state=42).fit(self.scaler.transform(X))
 
-            # Modelleri disk üzerine kaydediyoruz
+            # Save models to disk
             joblib.dump((self.model, self.label_encoder, self.scaler, kmeans, iso_forest), self.model_path)
-            return f"Model Başarıyla Eğitildi. Doğruluk: %{metrics['accuracy'] * 100:.1f}"
+            return f"Model Trained Successfully. Accuracy: %{metrics['accuracy'] * 100:.1f}"
 
         except Exception as e:
-            return f"Eğitim Hatası: {str(e)}"
+            return f"Training Error: {str(e)}"
 
     def analyze_all_satellites(self):
         """
-        Eğitilmiş modelleri kullanarak canlı TLE verilerini analiz etme.
+        Analyze live TLE data using trained models.
         """
         if self.model is None or self.kmeans is None or self.iso_forest is None:
             if self.model_path.exists():
                 try:
                     loaded_data = joblib.load(self.model_path)
                     self.model, self.label_encoder, self.scaler, self.kmeans, self.iso_forest = loaded_data
-                    print(">>> Modeller diskten başarıyla yüklendi.")
+                    print(">>> Models successfully loaded from disk.")
                 except Exception as e:
-                    print(f">>> Modeller yüklenirken hata: {e}")
+                    print(f">>> Error loading models: {e}")
                     return 0
             else:
-                print(">>> HATA: Model dosyası bulunamadı! Lütfen önce /ssa/train yapın.")
+                print(">>> ERROR: Model file not found! Please run /ssa/train first.")
                 return 0
 
         if self.model is None:
             return 0
 
-        # Ülke lookup tablosu oluştur
+        # Create country lookup table
         ucs_df = pd.read_csv(self.data_path, sep=';', on_bad_lines='skip', low_memory=False, encoding='latin-1')
         ucs_df.columns = [c.strip() for c in ucs_df.columns]
 
-        # NORAD sütununu sayısal yap ve boşlukları sil
+        # Make NORAD column numeric and strip spaces
         ucs_df['NORAD Number'] = pd.to_numeric(ucs_df['NORAD Number'], errors='coerce')
         country_lookup = ucs_df.dropna(subset=['NORAD Number']).set_index('NORAD Number')[
             'Country of Operator/Owner'].to_dict()
@@ -199,14 +199,14 @@ class SSAService:
                 if not line2.startswith("2 "):
                     continue
 
-                # Fiziksel Parametreler
+                # Physical Parameters
                 incl = float(line2[8:16])
                 ecc = float("0." + line2[26:33].strip())
-                mm = float(line2[52:63])  # Mean Motion uydunun bir günde dünya etrafında kaç tur attığıdır
+                mm = float(line2[52:63])  # Mean Motion: how many times the satellite orbits Earth in a day
                 alt = ((398600.44 / ((mm * 2 * np.pi / 86400) ** 2)) ** (1 / 3)) - 6378.137
                 bstar = self.parse_bstar(line1)
 
-                # AI Tahminleri
+                # AI Predictions
                 input_raw = np.array([[incl, ecc, 1440 / mm, alt, alt]])
                 scaled = self.scaler.transform(input_raw)
 
@@ -215,19 +215,19 @@ class SSAService:
                 cluster_id = int(self.kmeans.predict(scaled)[0])
                 is_anomaly = 1 if self.iso_forest.predict(scaled)[0] == -1 else 0
 
-                # YÖRÜNGE SÖNÜMLENME RİSKİ (Decay Risk)
-                # Alçak irtifa + Yüksek BSTAR = Kritik Risk
-                decay_risk = "DÜŞÜK"
-                if alt < 350 and bstar > 0.0005:  # Kritik irtifa sınırı
-                    decay_risk = "YÜKSEK"
+                # ORBITAL DECAY RISK
+                # Low altitude + High BSTAR = Critical Risk
+                decay_risk = "LOW"
+                if alt < 350 and bstar > 0.0005:  # Critical altitude threshold
+                    decay_risk = "HIGH"
                 elif alt < 400:
-                    decay_risk = "ORTA"
+                    decay_risk = "MEDIUM"
 
-                # ÜLKE BİLGİSİ (Lookup)
-                # TLE'deki NORAD ID'yi yakala (Line 2: 3-7 karakterler)
-                # TLE'den gelen ID'yi int'e çevir
+                # COUNTRY INFO (Lookup)
+                # Capture NORAD ID from TLE (Line 2: characters 3-7)
+                # Convert ID from TLE to int
                 norad_id = int(line2[2:7].strip())
-                country = country_lookup.get(norad_id, "Bilinmiyor")
+                country = country_lookup.get(norad_id, "Unknown")
 
                 cur.execute("""
                     UPDATE satellite_intelligence 
