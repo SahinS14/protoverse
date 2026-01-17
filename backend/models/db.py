@@ -31,7 +31,7 @@ def init_db():
         )
     """)
 
-    # --- MIGRATION: Add missing columns country, priority ---
+    # --- MIGRATION: Add missing columns country, priority, mission_priority ---
     curr.execute("PRAGMA table_info(raw_tles)")
     columns = [row[1] for row in curr.fetchall()]
     missing = []
@@ -49,6 +49,13 @@ def init_db():
         except Exception as e:
             missing.append("priority")
             logging.warning(f"Could not ALTER TABLE for 'priority': {e}")
+    if "mission_priority" not in columns:
+        try:
+            curr.execute("ALTER TABLE raw_tles ADD COLUMN mission_priority TEXT DEFAULT 'NORMAL'")
+            logging.info("Migrated: Added 'mission_priority' column to raw_tles.")
+        except Exception as e:
+            missing.append("mission_priority")
+            logging.warning(f"Could not ALTER TABLE for 'mission_priority': {e}")
 
     # If ALTER TABLE failed, recreate table and migrate data
     if missing:
@@ -65,13 +72,14 @@ def init_db():
                 source TEXT,
                 fetched_at TEXT,
                 country TEXT DEFAULT 'Global',
-                priority TEXT DEFAULT 'SECONDARY'
+                priority TEXT DEFAULT 'SECONDARY',
+                mission_priority TEXT DEFAULT 'NORMAL'
             )
         """)
         curr.execute("""
-            INSERT INTO raw_tles_new (id, sat_name, line1, line2, epoch, source, fetched_at, country, priority)
+            INSERT INTO raw_tles_new (id, sat_name, line1, line2, epoch, source, fetched_at, country, priority, mission_priority)
             SELECT id, sat_name, line1, line2, epoch, source, fetched_at,
-                COALESCE(country, 'Global'), COALESCE(priority, 'SECONDARY') FROM raw_tles
+                COALESCE(country, 'Global'), COALESCE(priority, 'SECONDARY'), COALESCE(mission_priority, 'NORMAL') FROM raw_tles
         """)
         curr.execute("DROP TABLE raw_tles")
         curr.execute("ALTER TABLE raw_tles_new RENAME TO raw_tles")
@@ -82,6 +90,7 @@ def init_db():
     # Ensure all rows have defaults
     curr.execute("UPDATE raw_tles SET country = 'Global' WHERE country IS NULL OR country = ''")
     curr.execute("UPDATE raw_tles SET priority = 'SECONDARY' WHERE priority IS NULL OR priority = ''")
+    curr.execute("UPDATE raw_tles SET mission_priority = 'NORMAL' WHERE mission_priority IS NULL OR mission_priority = ''")
 
     # Conjunction Alerts Table
     # Default value is 'COLLISION'
