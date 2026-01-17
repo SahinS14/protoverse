@@ -8,12 +8,12 @@ from processing.propagator import tle_to_satrec
 class TleService:
 
     def update_tles_from_source(self) -> int:
-        """Celestrak veya tanımlı kaynaktan TLE verilerini çeker ve DB'yi günceller."""
+        """Fetches TLE data from Celestrak or a defined source and updates the DB."""
         count = fetch_and_store()
         return count
 
     def get_all_satellites(self, limit: int = 100) -> List[Dict[str, Any]]:
-        """Kayıtlı uyduların listesini döner."""
+        """Returns a list of registered satellites."""
         conn = get_conn()
         cur = conn.cursor()
 
@@ -25,7 +25,7 @@ class TleService:
         return [dict(row) for row in rows]
 
     def get_total_count(self) -> int:
-        """Veritabanındaki toplam uydu sayısını döner."""
+        """Returns the total number of satellites in the database."""
         conn = get_conn()
         cur = conn.cursor()
         try:
@@ -38,7 +38,7 @@ class TleService:
             conn.close()
 
     def search_satellites(self, query: str) -> List[Dict[str, Any]]:
-        """İsme göre uydu arar"""
+        """Searches for satellites by name."""
         conn = get_conn()
         cur = conn.cursor()
 
@@ -55,7 +55,7 @@ class TleService:
         return [dict(row) for row in rows]
 
     def get_satellite_by_id(self, sat_id: int) -> Optional[Dict[str, Any]]:
-        """ID'ye göre tek bir uydu verisini döner."""
+        """Returns a single satellite record by ID."""
         conn = get_conn()
         cur = conn.cursor()
         cur.execute("SELECT * FROM raw_tles WHERE id = ?", (sat_id,))
@@ -66,7 +66,7 @@ class TleService:
         return None
 
     def get_satrec_by_id(self, sat_id: int):
-        """Hesaplamalar için doğrudan sgp4 Satrec nesnesi döner."""
+        """Returns the sgp4 Satrec object directly for calculations."""
         sat_data = self.get_satellite_by_id(sat_id)
         if not sat_data:
             return None
