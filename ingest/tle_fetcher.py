@@ -14,7 +14,7 @@ CELESTRAK_STATIONS = "https://celestrak.org/NORAD/elements/gp.php?GROUP=stations
 
 
 def fetch_tle_text(url: str) -> str:
-    # Temporarily added because it gave errors after a certain number of requests (despite timeout)
+    # Temporarily added because errors occurred after a certain number of requests (despite timeout)
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36 (AstroGuard-Platform/1.0)',
     }
@@ -45,7 +45,7 @@ def save_tles(blocks: List[Tuple[str, str, str]], source: str = "celestrak"):
     cur = conn.cursor()
     now = datetime.utcnow().isoformat()
     for name, line1, line2 in blocks:
-        # Todo: In future versions, places like this will be made more secure against injection
+        # TODO: In future versions, places like this will be made more secure against SQL injection
         cur.execute(
             "INSERT INTO raw_tles (sat_name, line1, line2, epoch, source, fetched_at) VALUES (?, ?, ?, ?, ?, ?)",
             (name, line1, line2, "", source, now))
@@ -63,4 +63,4 @@ def fetch_and_store(url: str = CELESTRAK_STATIONS):
 
 if __name__ == "__main__":
     n = fetch_and_store()
-    print(f"{n} adet TLE verisi kaydedildi.")
+    print(f"{n} TLE records have been saved.")
