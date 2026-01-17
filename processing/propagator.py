@@ -55,8 +55,6 @@ def propagate_satrec(sat: Satrec, times_utc: List[datetime]):
             # raise a RuntimeError.
             raise RuntimeError(f"SGP4 error code {e}")
 
-        # Sonuçları listeye ekle
-        # r, v değerleri TEME (True Equator, Mean Equinox) koordinat sistemindedir.
         results.append({
             "time": t,
             "r_km": r,  # Konum (km)
