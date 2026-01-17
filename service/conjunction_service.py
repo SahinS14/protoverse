@@ -79,6 +79,7 @@ class ConjunctionService:
 
         # Detailed analysis on candidate pairs, Narrow Phase
         # SGP4 and Optimization will only be run on filtered candidate pairs
+
         for id1, id2 in candidate_pairs:
             if id1 not in satrecs or id2 not in satrecs:
                 continue
@@ -87,6 +88,21 @@ class ConjunctionService:
             sat2 = satrecs[id2]
             r1, v1 = states_map[id1]
             r2, v2 = states_map[id2]
+
+            # Fetch mission_priority for both satellites
+            cur2 = conn.cursor()
+            cur2.execute("SELECT mission_priority FROM raw_tles WHERE id=?", (id1,))
+            mp1 = cur2.fetchone()
+            cur2.execute("SELECT mission_priority FROM raw_tles WHERE id=?", (id2,))
+            mp2 = cur2.fetchone()
+            mp1 = mp1[0] if mp1 else 'NORMAL'
+            mp2 = mp2[0] if mp2 else 'NORMAL'
+
+            # Apply stricter threshold if either is CRITICAL
+            threshold_km = COLLISION_SAVE_THRESHOLD_KM
+            if mp1 == 'CRITICAL' or mp2 == 'CRITICAL':
+                threshold_km = COLLISION_SAVE_THRESHOLD_KM * 1.5
+                print(f"[Critical Mission Mode] Stricter threshold applied for pair {id1}-{id2}: {threshold_km} km")
 
             try:
                 # Analytical Prediction -> SGP4 Refinement -> Docking Check
@@ -111,8 +127,8 @@ class ConjunctionService:
                 should_save = True
             elif conj.event_type == "COLLISION":
                 # Score > 0 means there is a certain risk
-                # Also, distance must be below the threshold (150 km)
-                if conj.score > 0 and conj.miss_distance_km < COLLISION_SAVE_THRESHOLD_KM:
+                # Also, distance must be below the threshold
+                if conj.score > 0 and conj.miss_distance_km < threshold_km:
                     should_save = True
 
             if should_save:

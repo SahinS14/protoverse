@@ -33,10 +33,15 @@ class ManeuverService:
 
         # Fetch metadata for stricter safety margins
         sat1_meta = tle_service.get_satellite_by_id(sat_id_primary)
+        sat2_meta = tle_service.get_satellite_by_id(sat_id_secondary)
         # Default safety margin
         margin_km = target_miss_km
-        # Apply stricter margin for PRIMARY (Indian) satellites
-        if sat1_meta and sat1_meta.get("country") == "India" and sat1_meta.get("priority") == "PRIMARY":
+        # Apply stricter margin for CRITICAL satellites
+        if (sat1_meta and sat1_meta.get("mission_priority") == "CRITICAL") or (sat2_meta and sat2_meta.get("mission_priority") == "CRITICAL"):
+            margin_km = max(target_miss_km, target_miss_km * 1.5)
+            print(f"[Critical Mission Mode] Stricter maneuver margin applied: {margin_km} km for pair {sat_id_primary}-{sat_id_secondary}")
+        # Apply stricter margin for PRIMARY (Indian) satellites (legacy logic)
+        elif sat1_meta and sat1_meta.get("country") == "India" and sat1_meta.get("priority") == "PRIMARY":
             margin_km = max(target_miss_km, 5.0)  # Stricter: at least 5 km
 
         burn_time = tca - timedelta(seconds=3600)
