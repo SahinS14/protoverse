@@ -47,6 +47,22 @@ Current collision avoidance workflows rely on deterministic orbit propagation fr
 
 There is no scalable, autonomous, and decision-aware system capable of continuously predicting conjunction risks and computing optimal avoidance maneuvers under orbital uncertainty and real-time constraints.
 
+
+---
+
+## 📝 Recent UI Update
+
+**Orbital Situational Awareness Section Removed**
+
+The dashboard UI has been updated:
+- The "Orbital Situational Awareness" section has been removed for clarity and simplicity.
+- Only a single button remains, providing direct access to the Orbital Intelligence View:
+  - [Open Orbital Intelligence View](https://nebula-ledger.vercel.app/tracking)
+
+This change streamlines the user experience and ensures quick access to orbital tracking features.
+
+---
+
 AstroGuard addresses this gap by combining physics-consistent modeling with modular, autonomy-ready system design.
 
 ---
