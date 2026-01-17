@@ -96,7 +96,7 @@ const CLUSTER_COLORS = {
 };
 async function addSatelliteToMap(id, name, forcedColor = null) {
     if (activeLayers[id]) {
-        alert("This satellite is already added to the map!");
+        alert(lang.error_already_added);
         return;
     }
 
@@ -141,7 +141,7 @@ async function addSatelliteToMap(id, name, forcedColor = null) {
         showSatDetails(id);
 
     } catch (e) {
-        alert("Hata: " + e);
+        alert(lang.error_generic + e);
     } finally {
         showLoading(false);
     }
@@ -185,7 +185,7 @@ function updateActiveSatList() {
         div.style.borderLeftColor = sat.color;
         div.innerHTML = `
                     <div onclick="showSatDetails(${id})" style="cursor:pointer; flex-grow:1;">
-                        <span class="sat-color-dot" style="color:${sat.color}"></span>
+            showLoading("Calculating orbit...");
                         <span class="fw-bold small">${sat.meta.sat_name}</span>
                         <small class="ms-2">${id}</small>
                     </div>
@@ -241,7 +241,7 @@ async function visualizeConjunction(sat1Id, sat1Name, sat2Id, sat2Name, tcaStr) 
             });
 
             L.marker([closestPoint.lat, closestPoint.lon], { icon: dangerIcon }).addTo(map)
-                .bindPopup(`<strong class="text-danger">TAHMİNİ ÇARPIŞMA NOKTASI</strong><br>TCA: ${new Date(tcaStr).toLocaleTimeString()}`)
+                .bindPopup(`<strong class="text-danger">ESTIMATED COLLISION POINT</strong><br>TCA: ${new Date(tcaStr).toLocaleTimeString()}`)
                 .openPopup();
 
             map.setView([closestPoint.lat, closestPoint.lon], 4);
@@ -249,7 +249,7 @@ async function visualizeConjunction(sat1Id, sat1Name, sat2Id, sat2Name, tcaStr) 
 
     } catch (e) {
         console.error(e);
-        alert("Görselleştirme hatası oluştu.");
+        alert(lang.error_visualization);
     } finally {
         showLoading(false);
     }
@@ -476,7 +476,7 @@ async function runScreening() {
     try {
         const res = await fetch(`${API_BASE}/conjunctions/run-screening`, { method: 'POST' });
         const data = await res.json();
-        alert(`Analysis Finished. Processed: ${data.processed_pairs}`);
+        alert(`Analysis Complete. Processed: ${data.processed_pairs}, Alerts Saved: ${data.alerts_saved}`);
         loadAlerts();
     } catch (e) { alert(e); }
     finally { showLoading(false); }
@@ -544,7 +544,7 @@ async function trainSSA() {
         alert("Success: " + data.message);
     } catch (e) {
         console.error("Training Error:", e);
-        alert("An error occurred during model training. Check backend logs.");
+        alert(lang.error_model_training);
     } finally {
         showLoading(false);
     }
