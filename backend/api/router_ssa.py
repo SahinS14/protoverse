@@ -1,3 +1,25 @@
+from fastapi import APIRouter, Response
+import httpx
+
+router = APIRouter(prefix="/ssa", tags=["SSA Intelligence"])
+
+# Visualization-only proxy for Nebula Ledger
+@router.get("/proxy/nebula")
+async def proxy_nebula():
+    """
+    Visualization-only proxy endpoint for Nebula Ledger.
+    Forwards HTML from https://nebula-ledger.vercel.app/ for embedding in dashboard iframe.
+    Does NOT modify, scrape, or alter external content.
+    """
+    nebula_url = "https://nebula-ledger.vercel.app/"
+    async with httpx.AsyncClient() as client:
+        try:
+            resp = await client.get(nebula_url, timeout=10)
+            # Remove headers that block framing
+            headers = {k: v for k, v in resp.headers.items() if k.lower() not in ["content-security-policy", "x-frame-options"]}
+            return Response(content=resp.text, status_code=resp.status_code, headers=headers, media_type="text/html")
+        except Exception:
+            return Response(content="<div style='color:white;background:#222;padding:2em;text-align:center;'>Situational awareness view unavailable in embedded mode (proxy error).</div>", media_type="text/html", status_code=502)
 from fastapi import APIRouter, HTTPException
 from service.ssa_service import ssa_service
 from backend.models.db import get_conn  # For database connection
