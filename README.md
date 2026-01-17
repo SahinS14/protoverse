@@ -27,19 +27,6 @@ There is no scalable, autonomous, and decision-aware system capable of continuou
 
 ---
 
-## 📝 Recent UI Update
-
-**Orbital Situational Awareness Section Removed**
-
-The dashboard UI has been updated:
-- The "Orbital Situational Awareness" section has been removed for clarity and simplicity.
-- Only a single button remains, providing direct access to the Orbital Intelligence View:
-  - [Open Orbital Intelligence View](https://nebula-ledger.vercel.app/tracking)
-
-This change streamlines the user experience and ensures quick access to orbital tracking features.
-
----
-
 AstroGuard addresses this gap by combining physics-consistent modeling with modular, autonomy-ready system design.
 
 ---
@@ -280,4 +267,5 @@ Only publicly available orbital data is used. No classified or restricted satell
 ## 🏁 Summary
 
 AstroGuard demonstrates a scalable, explainable, and autonomy-ready approach to satellite collision avoidance. The project emphasizes correct physics, modular system design, and transparent decision support, forming a strong foundation for future AI-driven space traffic management systems.
+
 
