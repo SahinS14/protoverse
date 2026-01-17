@@ -1,4 +1,4 @@
-# 🚀 Space Collision Avoidance System
+# 🚀 AstroGuard — Autonomous Space Traffic Management & Collision Avoidance Platform
 
 ![Python](https://img.shields.io/badge/Python-3.8%2B-blue)
 ![Status](https://img.shields.io/badge/Status-Prototype-orange)
