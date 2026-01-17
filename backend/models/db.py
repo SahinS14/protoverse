@@ -1,8 +1,10 @@
 from pathlib import Path
 import sqlite3
+import logging
 
  # Set the database path according to the project directory structure
 DB_PATH = Path(__file__).resolve().parents[2] / "data" / "astm.db"  # AstroGuard database path (legacy name retained for compatibility)
+logging.basicConfig(level=logging.INFO)
 DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 
@@ -29,6 +31,58 @@ def init_db():
         )
     """)
 
+    # --- MIGRATION: Add missing columns country, priority ---
+    curr.execute("PRAGMA table_info(raw_tles)")
+    columns = [row[1] for row in curr.fetchall()]
+    missing = []
+    if "country" not in columns:
+        try:
+            curr.execute("ALTER TABLE raw_tles ADD COLUMN country TEXT DEFAULT 'Global'")
+            logging.info("Migrated: Added 'country' column to raw_tles.")
+        except Exception as e:
+            missing.append("country")
+            logging.warning(f"Could not ALTER TABLE for 'country': {e}")
+    if "priority" not in columns:
+        try:
+            curr.execute("ALTER TABLE raw_tles ADD COLUMN priority TEXT DEFAULT 'SECONDARY'")
+            logging.info("Migrated: Added 'priority' column to raw_tles.")
+        except Exception as e:
+            missing.append("priority")
+            logging.warning(f"Could not ALTER TABLE for 'priority': {e}")
+
+    # If ALTER TABLE failed, recreate table and migrate data
+    if missing:
+        logging.info("Recreating raw_tles table to add missing columns: %s", missing)
+        curr.execute("PRAGMA foreign_keys=off")
+        curr.execute("BEGIN TRANSACTION")
+        curr.execute("""
+            CREATE TABLE IF NOT EXISTS raw_tles_new (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                sat_name TEXT,
+                line1 TEXT,
+                line2 TEXT,
+                epoch TEXT,
+                source TEXT,
+                fetched_at TEXT,
+                country TEXT DEFAULT 'Global',
+                priority TEXT DEFAULT 'SECONDARY'
+            )
+        """)
+        curr.execute("""
+            INSERT INTO raw_tles_new (id, sat_name, line1, line2, epoch, source, fetched_at, country, priority)
+            SELECT id, sat_name, line1, line2, epoch, source, fetched_at,
+                COALESCE(country, 'Global'), COALESCE(priority, 'SECONDARY') FROM raw_tles
+        """)
+        curr.execute("DROP TABLE raw_tles")
+        curr.execute("ALTER TABLE raw_tles_new RENAME TO raw_tles")
+        curr.execute("COMMIT")
+        curr.execute("PRAGMA foreign_keys=on")
+        logging.info("Migration complete: raw_tles table recreated with all required columns.")
+
+    # Ensure all rows have defaults
+    curr.execute("UPDATE raw_tles SET country = 'Global' WHERE country IS NULL OR country = ''")
+    curr.execute("UPDATE raw_tles SET priority = 'SECONDARY' WHERE priority IS NULL OR priority = ''")
+
     # Conjunction Alerts Table
     # Default value is 'COLLISION'
     # For docking events, we will use 'DOCKING'
@@ -44,7 +98,7 @@ def init_db():
             event_type TEXT DEFAULT 'COLLISION', 
             created_at TEXT
         )
-        """)
+    """)
 
     curr.execute("""
         CREATE TABLE IF NOT EXISTS satellite_intelligence (
