@@ -47,63 +47,64 @@ All visuals are generated from **computed physical state data** for maximum reli
 
 ---
 
+
 ## 🧱 Project Structure
 
 ```
-root/                            
-├── main.py                  # Entry point for the backend or orchestration
-├── requirements.txt         # Python dependencies
-├── README.md                # Project documentation
-├── backend/                 # FastAPI backend with API routers and models
+protoverse/
+├── main.py                  # 🚀 System orchestrator & entry point
+├── requirements.txt         # 📦 Python dependencies
+├── README.md                # 📖 Project documentation
+├── backend/                 # 🛰️ FastAPI backend (API layer)
 │   ├── api/
-│   │   ├── router_conjunctions.py
-│   │   ├── router_maneuver.py
-│   │   ├── router_propagate.py
-│   │   ├── router_ssa.py
-│   │   ├── router_tle.py
-│   │   └── __pycache__/
+│   │   ├── router_conjunctions.py   # 🔗 Conjunction event API endpoints
+│   │   ├── router_maneuver.py       # 🛠️ Maneuver planning API endpoints
+│   │   ├── router_propagate.py      # 📡 Orbit propagation API endpoints
+│   │   ├── router_ssa.py            # 🛰️ Space situational awareness API
+│   │   ├── router_tle.py            # 📑 TLE ingestion & management API
+│   │   └── __pycache__/             # ⚡ Python bytecode cache
 │   └── models/
-│       ├── db.py
-│       └── __pycache__/
-├── dashboard/               # Web dashboard (frontend)
-│   ├── index.html
+│       ├── db.py                    # 🗄️ Database models & ORM
+│       └── __pycache__/             # ⚡ Python bytecode cache
+├── dashboard/               # 🖥️ Web dashboard (frontend UI)
+│   ├── index.html                  # 🌐 Main dashboard HTML
 │   └── assets/
 │       ├── css/
-│       │   └── style.css
-│       ├── img/
+│       │   └── style.css           # 🎨 Dashboard styles
+│       ├── img/                    # 🖼️ UI images & icons
 │       └── js/
-│           └── main.js
-├── data/                    # Data files and resources
-├── docs/                    # Documentation, diagrams, screenshots
-│   ├── Diagrams/
-│   └── Screenshots/
-├── ingest/                  # Data ingestion scripts
-│   ├── tle_fetcher.py
-│   └── __pycache__/
-├── notebooks/               # Jupyter and Python demo notebooks
-│   ├── quick_demo.py
-│   ├── test_conjunction_demo.py
-│   └── test_maneuver_optimizer.py
-├── planner/                 # Maneuver optimization logic
-│   ├── optimizer.py
-│   └── __pycache__/
-├── processing/              # Core processing modules
-│   ├── conjunction.py
-│   ├── coord_utils.py
-│   ├── propagate_wrapper.py
-│   ├── propagator.py
-│   ├── pruner.py
-│   └── __pycache__/
-├── service/                 # Service layer for business logic
-│   ├── conjunction_service.py
-│   ├── maneuver_service.py
-│   ├── propagation_service.py
-│   ├── ssa_service.py
-│   ├── tle_service.py
-│   └── __pycache__/
-├── tests/                   # Test scripts and verification
-│   ├── test_tle_fetcher.py
-│   └── verification_conjunction_demo.py
+│           └── main.js             # ⚙️ Dashboard interactivity logic
+├── data/                    # 📊 Data files & resources
+├── docs/                    # 📚 Documentation, diagrams, screenshots
+│   ├── Diagrams/                   # 🗺️ System architecture diagrams
+│   └── Screenshots/                # 📸 UI and result screenshots
+├── ingest/                  # 📥 Data ingestion scripts
+│   ├── tle_fetcher.py              # 🔄 TLE data fetcher & parser
+│   └── __pycache__/                # ⚡ Python bytecode cache
+├── notebooks/               # 📓 Jupyter & Python demo notebooks
+│   ├── quick_demo.py               # 🚦 Quick system demo
+│   ├── test_conjunction_demo.py    # 🧪 Conjunction detection demo
+│   └── test_maneuver_optimizer.py  # 🧪 Maneuver optimization demo
+├── planner/                 # 🧠 Maneuver optimization logic
+│   ├── optimizer.py                # 🛠️ Maneuver optimization algorithms
+│   └── __pycache__/                # ⚡ Python bytecode cache
+├── processing/              # ⚙️ Core processing modules
+│   ├── conjunction.py              # 🔗 Conjunction detection logic
+│   ├── coord_utils.py              # 🗺️ Coordinate transformation utilities
+│   ├── propagate_wrapper.py        # 📡 Orbit propagation wrapper
+│   ├── propagator.py               # 📡 Physics-based propagator
+│   ├── pruner.py                   # ✂️ Data pruning & filtering
+│   └── __pycache__/                # ⚡ Python bytecode cache
+├── service/                 # 🛎️ Service layer (business logic)
+│   ├── conjunction_service.py      # 🔗 Conjunction event service
+│   ├── maneuver_service.py         # 🛠️ Maneuver planning service
+│   ├── propagation_service.py      # 📡 Propagation service logic
+│   ├── ssa_service.py              # 🛰️ SSA service logic
+│   ├── tle_service.py              # 📑 TLE management service
+│   └── __pycache__/                # ⚡ Python bytecode cache
+├── tests/                   # 🧪 Test scripts & verification
+│   ├── test_tle_fetcher.py         # 🧪 TLE fetcher unit tests
+│   └── verification_conjunction_demo.py # 🧪 Conjunction verification demo
 ```
 
 ---
