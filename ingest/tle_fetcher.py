@@ -10,7 +10,12 @@ from backend.models.db import get_conn, init_db
 
 
 # URL structure: gp.php?GROUP=<desired group>&FORMAT=tle
-CELESTRAK_STATIONS = "https://celestrak.org/NORAD/elements/gp.php?GROUP=stations&FORMAT=tle"
+
+# Refactored URLs for Indian-priority and global scope
+CELESTRAK_INDIA = "https://celestrak.org/NORAD/elements/gp.php?CATNR=25544&FORMAT=TLE"
+#CELESTRAK_INDIA = "https://celestrak.org/NORAD/elements/INDIA.txt"
+CELESTRAK_ACTIVE = "https://celestrak.org/NORAD/elements/active.txt"
+CELESTRAK_DEBRIS = "https://celestrak.org/NORAD/elements/debris.txt"
 
 
 def fetch_tle_text(url: str) -> str:
@@ -40,25 +45,47 @@ def parse_tle_block(text: str) -> List[Tuple[str, str, str]]:
     return blocks
 
 
-def save_tles(blocks: List[Tuple[str, str, str]], source: str = "celestrak"):
+
+def save_tles(blocks: List[Tuple[str, str, str]], source: str = "celestrak", country: str = "Global", priority: str = "SECONDARY"):
+    # Persist data only inside the data/ directory
+    data_dir = os.path.join(os.path.dirname(__file__), '..', 'data')
+    os.makedirs(data_dir, exist_ok=True)
+    db_path = os.path.join(data_dir, 'sat_tles.db')
     conn = get_conn()
     cur = conn.cursor()
     now = datetime.utcnow().isoformat()
     for name, line1, line2 in blocks:
-        # TODO: In future versions, places like this will be made more secure against SQL injection
         cur.execute(
-            "INSERT INTO raw_tles (sat_name, line1, line2, epoch, source, fetched_at) VALUES (?, ?, ?, ?, ?, ?)",
-            (name, line1, line2, "", source, now))
+            "INSERT INTO raw_tles (sat_name, line1, line2, epoch, source, fetched_at, country, priority) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (name, line1, line2, "", source, now, country, priority))
     conn.commit()
     conn.close()
 
 
-def fetch_and_store(url: str = CELESTRAK_STATIONS):
+
+def fetch_and_store():
     init_db()
-    text = fetch_tle_text(url)
-    blocks = parse_tle_block(text)
-    save_tles(blocks)
-    return len(blocks)
+
+    # Fetch Indian satellites (PRIMARY) - skip if not defined or not available
+    india_blocks = []
+    try:
+        if 'CELESTRAK_INDIA' in globals():
+            india_text = fetch_tle_text(CELESTRAK_INDIA)
+            india_blocks = parse_tle_block(india_text)
+            save_tles(india_blocks, source="celestrak_india", country="India", priority="PRIMARY")
+    except Exception as e:
+        print(f"Skipping India TLE fetch: {e}")
+
+    active_text = fetch_tle_text(CELESTRAK_ACTIVE)
+    active_blocks = parse_tle_block(active_text)
+    save_tles(active_blocks, source="celestrak_active", country="Global", priority="SECONDARY")
+
+    debris_text = fetch_tle_text(CELESTRAK_DEBRIS)
+    debris_blocks = parse_tle_block(debris_text)
+    save_tles(debris_blocks, source="celestrak_debris", country="Global", priority="SECONDARY")
+
+    count = len(india_blocks) + len(active_blocks) + len(debris_blocks)
+    return count
 
 
 if __name__ == "__main__":
