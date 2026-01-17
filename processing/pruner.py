@@ -58,11 +58,11 @@ def prune_pairs(states: Dict[int, Vec3], radius_km: float = 100.0) -> List[Tuple
             if j <= i:
                 # j == i is the satellite itself, no need to check
                 # j < i means if we found A,B pair, no need to check B,A again
-                # Bu sayede işlem sayısı yarıya inecektir ve gereksiz kopayalar olmayacaktır
+                # This way, the number of operations is halved and unnecessary duplicates are avoided
                 continue
-            # # İndeksleri gerçek uydu idlerine (NORAD ID) çevirip listeye ekle
+            # Convert indices to actual satellite IDs (NORAD ID) and add to the list
             pairs.add((sat_ids[i], sat_ids[j]))
-    # Set yapısını listeye çevirip döndür. Artık elimizde sadece
-    # gerçekten birbirine yakın olan, SGP4 ile incelenmeye değer adaylar var.
+    # Convert the set to a list and return. Now we only have
+    # candidates that are truly close to each other and worth examining with SGP4.
     return list(pairs)
 
