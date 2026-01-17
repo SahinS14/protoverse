@@ -137,25 +137,35 @@ class ConjunctionService:
         # Summary report to be returned to the API
         return {"processed_pairs": len(candidate_pairs), "alerts_saved": saved_count}
 
-    def get_alerts(self, limit: int = 20, event_type: str = "COLLISION") -> List[Dict[str, Any]]:
+    def get_alerts(self, limit: int = 20, event_type: str = "COLLISION", country: str = None, priority: str = None) -> List[Dict[str, Any]]:
         """
         Fetches alerts from the database.
-        Uses SQL JOIN to also get satellite names from the Satellite table.
+        Uses SQL JOIN to also get satellite names and metadata from the Satellite table.
+        Filters by country and priority if provided.
         """
         conn = get_conn()
         cur = conn.cursor()
         query = """
             SELECT 
                 a.id, a.sat1_id, a.sat2_id, a.tca, a.miss_distance_km, a.rel_velocity_km_s, a.score, a.event_type, a.created_at,
-                s1.sat_name as sat1_name, s2.sat_name as sat2_name
+                s1.sat_name as sat1_name, s2.sat_name as sat2_name,
+                s1.country as sat1_country, s2.country as sat2_country,
+                s1.priority as sat1_priority, s2.priority as sat2_priority
             FROM conjunction_alerts a
             JOIN raw_tles s1 ON a.sat1_id = s1.id
             JOIN raw_tles s2 ON a.sat2_id = s2.id
-            WHERE a.event_type = ? 
-            ORDER BY a.score DESC, a.tca ASC
-            LIMIT ?
+            WHERE a.event_type = ?
         """
-        cur.execute(query, (event_type, limit))
+        params = [event_type]
+        if country:
+            query += " AND (s1.country = ? OR s2.country = ?)"
+            params.extend([country, country])
+        if priority:
+            query += " AND (s1.priority = ? OR s2.priority = ?)"
+            params.extend([priority, priority])
+        query += " ORDER BY a.score DESC, a.tca ASC LIMIT ?"
+        params.append(limit)
+        cur.execute(query, tuple(params))
         rows = cur.fetchall()
         conn.close()
         # Convert row objects to dictionary for JSON compatibility

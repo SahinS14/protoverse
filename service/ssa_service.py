@@ -72,7 +72,7 @@ class SSAService:
         https://www.kaggle.com/datasets/mexwell/ucs-satellite-database/data
         """
         if not self.data_path.exists():
-            return "Hata: Veri seti bulunamadı."
+            return "Error: Dataset not found."
 
         try:
             # Preprocessing

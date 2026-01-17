@@ -8,10 +8,10 @@ router = APIRouter(prefix="/conjunctions", tags=["Conjunction Analysis"])
 
 
 class ConjunctionAlertSchema(BaseModel):
-        """
-        Schema for representing a conjunction alert event between two satellites.
-        Includes satellite IDs, names, time of closest approach, miss distance, relative velocity, score, and event type.
-        """
+    """
+    Schema for representing a conjunction alert event between two satellites.
+    Includes satellite IDs, names, time of closest approach, miss distance, relative velocity, score, and event type.
+    """
     id: int
     sat1_id: int
     sat1_name: str
@@ -26,10 +26,10 @@ class ConjunctionAlertSchema(BaseModel):
 
 
 class ScreeningResponse(BaseModel):
-        """
-        Response schema for the collision screening endpoint.
-        Indicates the status, number of processed satellite pairs, and number of alerts saved.
-        """
+    """
+    Response schema for the collision screening endpoint.
+    Indicates the status, number of processed satellite pairs, and number of alerts saved.
+    """
     status: str
     processed_pairs: int
     alerts_saved: int
@@ -53,13 +53,16 @@ async def run_screening():
         raise HTTPException(status_code=500, detail=str(e))
 
 
+
 @router.get("/alerts", response_model=List[ConjunctionAlertSchema])
-async def get_latest_alerts(limit: int = 20, type: str = "COLLISION"):
+async def get_latest_alerts(limit: int = 20, type: str = "COLLISION", country: str = None, priority: str = None):
     """
     Retrieves the latest conjunction alerts from the database.
     Parameters:
         limit: Maximum number of alerts to return (default: 20)
         type: Type of event ('COLLISION' or 'DOCKING')
+        country: Filter by country (e.g., 'India')
+        priority: Filter by priority ('PRIMARY' or 'SECONDARY')
     Returns a list of conjunction alert events.
     """
-    return conjunction_service.get_alerts(limit, event_type=type)
+    return conjunction_service.get_alerts(limit, event_type=type, country=country, priority=priority)

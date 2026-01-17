@@ -126,15 +126,15 @@
         </div>
 
         <div id="satellites" class="content-section d-none animate__animated animate__fadeIn">
-            <h3 class="mb-4 fw-light">Satellite Database</h3>
+            <h3 class="mb-4 fw-light" data-lang="satellite_database"></h3>
             <div class="card-glass">
                 <div class="card-body">
                     <div class="input-group mb-4">
                         <span class="input-group-text bg-dark border-secondary text-secondary"><i
                                 class="fas fa-search"></i></span>
                         <input type="text" id="sat-list-search" class="form-control bg-dark text-white border-secondary"
-                            placeholder="Search Satellite (e.g., TURKSAT)...">
-                        <button class="btn btn-primary" onclick="searchSatellitesForList()">Search</button>
+                            data-lang-placeholder="search_satellite_placeholder">
+                        <button class="btn btn-primary" onclick="searchSatellitesForList()" data-lang="search"></button>
                     </div>
                     <div class="table-responsive">
                         <table class="table table-space table-hover">
@@ -148,7 +148,7 @@
                             </thead>
                             <tbody id="sat-table-body">
                                 <tr>
-                                    <td colspan="4" class="text-center">Loading...</td>
+                                    <td colspan="4" class="text-center" data-lang="loading"></td>
                                 </tr>
                             </tbody>
                         </table>
@@ -159,7 +159,7 @@
 
         <div id="conjunctions" class="content-section d-none animate__animated animate__fadeIn">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h3 class="fw-light">Collision Analysis (CDM)</h3>
+                <h3 class="fw-light">{{lang.collision_analysis}}</h3>
 
                 <div class="btn-group" role="group">
                     <input type="radio" class="btn-check" name="alertType" id="btnRadioCollision" autocomplete="off"
@@ -174,24 +174,24 @@
                 </div>
 
                 <button class="btn btn-success btn-sm ms-2" onclick="loadAlerts()"><i
-                        class="fas fa-redo me-2"></i>Refresh</button>
+                    class="fas fa-redo me-2"></i><span data-lang="refresh"></span></button>
             </div>
 
             <div id="conj-card" class="card-glass border-danger border-opacity-25">
                 <div class="card-header-glass text-danger" id="conj-header-text">
-                    <span><i class="fas fa-exclamation-triangle me-2"></i>Critical Close Approaches</span>
+                    <span><i class="fas fa-exclamation-triangle me-2"></i><span data-lang="critical_close_approaches"></span></span>
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
                         <table class="table table-space table-hover align-middle mb-0">
                             <thead>
                                 <tr>
-                                    <th>Risk</th>
-                                    <th>Primary</th>
-                                    <th>Secondary</th>
-                                    <th>TCA (UTC)</th>
-                                    <th>Miss Dist.</th>
-                                    <th>Actions</th>
+                                        <th data-lang="risk"></th>
+                                        <th data-lang="primary"></th>
+                                        <th data-lang="secondary"></th>
+                                        <th data-lang="tca_utc"></th>
+                                        <th data-lang="miss_distance"></th>
+                                        <th data-lang="action"></th>
                                 </tr>
                             </thead>
                             <tbody id="conj-table-body"></tbody>
@@ -203,11 +203,11 @@
 
         <div id="map-view" class="content-section d-none animate__animated animate__fadeIn">
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h3 class="fw-light m-0"><i class="fas fa-globe-asia text-info me-2"></i>Orbit Simulation</h3>
+                <h3 class="fw-light m-0"><i class="fas fa-globe-asia text-info me-2"></i><span data-lang="orbit_simulation"></span></h3>
                 <div>
-                    <button class="btn btn-sm btn-outline-light me-2" onclick="clearMap()"><i
-                            class="fas fa-trash me-1"></i>Clear Map</button>
-                    <span class="badge bg-secondary">Live</span>
+                        <button class="btn btn-sm btn-outline-light me-2" onclick="clearMap()"><i
+                            class="fas fa-trash me-1"></i><span data-lang="clear_map"></span></button>
+                    <span class="badge bg-secondary" data-lang="live"></span>
                 </div>
             </div>
 
@@ -215,27 +215,27 @@
                 <div id="map"></div>
 
                 <div class="map-overlay">
-                    <h6 class="text-white border-bottom border-secondary pb-2 mb-3">Displayed Objects</h6>
+                    <h6 class="text-white border-bottom border-secondary pb-2 mb-3" data-lang="displayed_objects"></h6>
 
                     <div class="search-container">
                         <input type="text" id="map-sat-search"
                             class="form-control bg-dark text-white border-secondary form-control-sm"
-                            placeholder="+ Add Satellite (search by name)..." autocomplete="off">
+                            data-lang-placeholder="add_satellite_placeholder" autocomplete="off">
                         <div id="search-results" class="search-results shadow-lg"></div>
                     </div>
 
                     <div id="active-sat-list" class="flex-grow-1 mb-3">
                         <div class="text-center small mt-4" id="empty-map-msg">
                             <i class="fas fa-satellite fa-2x mb-2 opacity-25"></i><br>
-                            No satellite selected yet.
+                            <span data-lang="no_satellite_selected"></span>
                         </div>
                     </div>
 
                     <div id="sat-details-panel"
                         class="d-none bg-black bg-opacity-25 p-3 rounded border border-secondary">
                         <div class="d-flex justify-content-between align-items-center mb-2">
-                            <strong class="text-info" id="detail-name">SAT_NAME</strong>
-                            <span class="badge bg-secondary font-mono" id="detail-id">ID</span>
+                            <strong class="text-info" id="detail-name" data-lang="sat_name"></strong>
+                            <span class="badge bg-secondary font-mono" id="detail-id" data-lang="id"></span>
                         </div>
                         <div class="tle-box mb-2" id="detail-tle"></div>
                     </div>
@@ -444,6 +444,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="assets/js/main.js"></script>
+    <script src="assets/js/lang-loader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 

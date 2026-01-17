@@ -12,14 +12,24 @@ class TleService:
         count = fetch_and_store()
         return count
 
-    def get_all_satellites(self, limit: int = 100) -> List[Dict[str, Any]]:
-        """Returns a list of registered satellites."""
+    def get_all_satellites(self, limit: int = 100, country: str = None, priority: str = None) -> List[Dict[str, Any]]:
+        """Returns a list of registered satellites. Supports country and priority filters."""
         conn = get_conn()
         cur = conn.cursor()
-
-        query = "SELECT id, sat_name, epoch, source, fetched_at, line1, line2 FROM raw_tles ORDER BY sat_name LIMIT ?"
-
-        cur.execute(query, (limit,))
+        query = "SELECT id, sat_name, epoch, source, fetched_at, line1, line2, country, priority FROM raw_tles"
+        conditions = []
+        params = []
+        if country:
+            conditions.append("country = ?")
+            params.append(country)
+        if priority:
+            conditions.append("priority = ?")
+            params.append(priority)
+        if conditions:
+            query += " WHERE " + " AND ".join(conditions)
+        query += " ORDER BY sat_name LIMIT ?"
+        params.append(limit)
+        cur.execute(query, tuple(params))
         rows = cur.fetchall()
         conn.close()
         return [dict(row) for row in rows]

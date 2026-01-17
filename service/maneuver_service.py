@@ -31,28 +31,24 @@ class ManeuverService:
         if not sat1 or not sat2:
             raise ValueError("Satellites not found")
 
-        # Time Leverage Strategy
-        # In the report, we mentioned the concept of 'burn time' for maneuver simulation
-        # Here, we set the burn time to 1 hour (3600 seconds) before TCA.
-        # The earlier the maneuver is performed before the collision, the less fuel (DeltaV) is consumed.
-        # Even a very small angle change can make a difference of kilometers over 1 hour of flight.
+        # Fetch metadata for stricter safety margins
+        sat1_meta = tle_service.get_satellite_by_id(sat_id_primary)
+        # Default safety margin
+        margin_km = target_miss_km
+        # Apply stricter margin for PRIMARY (Indian) satellites
+        if sat1_meta and sat1_meta.get("country") == "India" and sat1_meta.get("priority") == "PRIMARY":
+            margin_km = max(target_miss_km, 5.0)  # Stricter: at least 5 km
+
         burn_time = tca - timedelta(seconds=3600)
 
-        # Run the Optimization Engine - Minimize J(dv) function
         proposal = find_minimal_dv(
             satrec_target=sat2,
             satrec_our=sat1,
             burn_time=burn_time,
             tca_time=tca,
             propagate_func=propagate_satrec_single,
-            target_miss_km=target_miss_km,
-            # DeltaV limit
-            # The magnitude of the impulsive velocity change (dv_mag) is optimized
-            # Here we tell the engine "You can spend a maximum of 2 m/s (0.002 km/s)"
-            # This limit can be adjusted to protect the satellite's fuel budget
+            target_miss_km=margin_km,
             dv_bound_km_s=0.002,
-            # Achieving the miss distance target is prioritized over fuel saving
-            # The coefficient is therefore set high
             penalty_lambda=100000.0,
             verbose=False
         )
