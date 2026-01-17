@@ -7,9 +7,9 @@ from processing.propagate_wrapper import propagate_satrec_single
 
 class ManeuverService:
     """
-    Bu servis tespit edilen bir çarpışma riski için en uygun kaçınma manevrasını hesaplar.
-    Matematiksel optimizasyon motorunu (find_minimal_dv) kullanır ve sonuçları
-    API'nin anlayacağı formatta sunar.
+    This service calculates the optimal avoidance maneuver for a detected collision risk.
+    It uses the mathematical optimization engine (find_minimal_dv) and presents the results
+    in a format understandable by the API.
     """
     def calculate_avoidance_maneuver(self,
                                      sat_id_primary: int,
@@ -17,28 +17,28 @@ class ManeuverService:
                                      tca: datetime,
                                      target_miss_km: float = 2.0) -> Dict[str, Any]:
         """
-        İki uydu arasındaki çarpışmayı önlemek için gerekli ateşleme planını oluşturur.
+        Creates the required burn plan to prevent a collision between two satellites.
         Args:
-            sat_id_primary: Manevrayı yapacak olan uydumuz.
-            sat_id_secondary: Çarpışma riski taşıyan diğer obje (enkaz veya uydu).
-            tca: Time of Closest Approach (En Yakın Geçiş Zamanı).
-            target_miss_km: Hedeflenen güvenli mesafe (Varsayılan: 2 km).
+            sat_id_primary: Our satellite that will perform the maneuver.
+            sat_id_secondary: The other object at collision risk (debris or satellite).
+            tca: Time of Closest Approach.
+            target_miss_km: Target safe distance (Default: 2 km).
         """
-        # Uyduların matematiksel modellerini yani SGP4 nesnelerini getir
+        # Get the mathematical models (SGP4 objects) of the satellites
         sat1 = tle_service.get_satrec_by_id(sat_id_primary)
         sat2 = tle_service.get_satrec_by_id(sat_id_secondary)
 
         if not sat1 or not sat2:
-            raise ValueError("Uydular bulunamadı")
+            raise ValueError("Satellites not found")
 
-        # Zaman Kaldıracı (Time Leverage) Stratejisi
-        # Raporda manevra simülasyonu için 'burn time' kavramından bahsetmiştik
-        # Burada ateşleme zamanını TCA'dan 1 saat (3600 sn) öncesine çekiyoruz.
-        # Çünkü çarpışmadan ne kadar önce manevra yaparsak, o kadar az yakıt (DeltaV) harcarız.
-        # Çok küçük bir açı değişikliği, 1 saatlik uçuş süresinde km'lerce fark yaratır.
+        # Time Leverage Strategy
+        # In the report, we mentioned the concept of 'burn time' for maneuver simulation
+        # Here, we set the burn time to 1 hour (3600 seconds) before TCA.
+        # The earlier the maneuver is performed before the collision, the less fuel (DeltaV) is consumed.
+        # Even a very small angle change can make a difference of kilometers over 1 hour of flight.
         burn_time = tca - timedelta(seconds=3600)
 
-        # Optimizasyon Motorunu Çalıştır - Minimize J(dv) fonksiyonu
+        # Run the Optimization Engine - Minimize J(dv) function
         proposal = find_minimal_dv(
             satrec_target=sat2,
             satrec_our=sat1,
@@ -46,13 +46,13 @@ class ManeuverService:
             tca_time=tca,
             propagate_func=propagate_satrec_single,
             target_miss_km=target_miss_km,
-            # DeltaV sınırı
-            # impulsive hız değişimi büyüklüğü (dv_mag) optimize edilir
-            # burada motora "Maksimum 2 m/s (0.002 km/s) harcayabilirsin" diyoruz
-            # bu sınır uydunun yakıt bütçesini korumak için ayarlanabilir
+            # DeltaV limit
+            # The magnitude of the impulsive velocity change (dv_mag) is optimized
+            # Here we tell the engine "You can spend a maximum of 2 m/s (0.002 km/s)"
+            # This limit can be adjusted to protect the satellite's fuel budget
             dv_bound_km_s=0.002,
-            # miss distance hedefine ulaşmak, yakıt tasarrufundan daha önceliklidir
-            # katsayı bu nedenle yüksek tutulmuştur
+            # Achieving the miss distance target is prioritized over fuel saving
+            # The coefficient is therefore set high
             penalty_lambda=100000.0,
             verbose=False
         )
