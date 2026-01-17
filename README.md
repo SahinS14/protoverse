@@ -31,35 +31,82 @@ Collision Risk Detection
 * **🛡️ Avoidance Logic:** Computes safe vs. unsafe paths to assist operators.
 * **🖥️ Interactive Dashboard:** A Mission Control-style interface to visualize decisions.
 * **🧠 AI-Ready:** Architecture designed to integrate Reinforcement Learning models in future iterations.
-```++++++++++++++++++++++++++++++++++++++++++++++++
----
+
 
 ## 🖥️ Mission Control Dashboard
 
-The system follows a strict pipeline from raw orbital data to visual decision support:
-- Adjust maneuver parameters
-- Toggle autonomous avoidance logic
-- View predicted orbital paths
-- Receive collision risk alerts
-- Compare safe vs unsafe trajectories
+The Mission Control Dashboard provides an interactive interface for satellite operators to:
 
-All visuals are generated from **computed physical state data**.
+- **Adjust maneuver parameters**
+- **Toggle autonomous avoidance logic**
+- **View predicted orbital paths**
+- **Receive collision risk alerts**
+- **Compare safe vs unsafe trajectories**
+
+All visuals are generated from **computed physical state data** for maximum reliability and transparency.
 
 ---
 
 ## 🧱 Project Structure
 
+```
+root/                            
+├── main.py                  # Entry point for the backend or orchestration
+├── requirements.txt         # Python dependencies
+├── README.md                # Project documentation
+├── backend/                 # FastAPI backend with API routers and models
+│   ├── api/
+│   │   ├── router_conjunctions.py
+│   │   ├── router_maneuver.py
+│   │   ├── router_propagate.py
+│   │   ├── router_ssa.py
+│   │   ├── router_tle.py
+│   │   └── __pycache__/
+│   └── models/
+│       ├── db.py
+│       └── __pycache__/
+├── dashboard/               # Web dashboard (frontend)
+│   ├── index.html
+│   └── assets/
+│       ├── css/
+│       │   └── style.css
+│       ├── img/
+│       └── js/
+│           └── main.js
+├── data/                    # Data files and resources
+├── docs/                    # Documentation, diagrams, screenshots
+│   ├── Diagrams/
+│   └── Screenshots/
+├── ingest/                  # Data ingestion scripts
+│   ├── tle_fetcher.py
+│   └── __pycache__/
+├── notebooks/               # Jupyter and Python demo notebooks
+│   ├── quick_demo.py
+│   ├── test_conjunction_demo.py
+│   └── test_maneuver_optimizer.py
+├── planner/                 # Maneuver optimization logic
+│   ├── optimizer.py
+│   └── __pycache__/
+├── processing/              # Core processing modules
+│   ├── conjunction.py
+│   ├── coord_utils.py
+│   ├── propagate_wrapper.py
+│   ├── propagator.py
+│   ├── pruner.py
+│   └── __pycache__/
+├── service/                 # Service layer for business logic
+│   ├── conjunction_service.py
+│   ├── maneuver_service.py
+│   ├── propagation_service.py
+│   ├── ssa_service.py
+│   ├── tle_service.py
+│   └── __pycache__/
+├── tests/                   # Test scripts and verification
+│   ├── test_tle_fetcher.py
+│   └── verification_conjunction_demo.py
+```
 
-collison/
-├── collison/              # Core simulation & collision logic
-├── examples/              # Example runs
-├── gui/                   # Web-based dashboard
-│   ├── app.py
-│   ├── simulator_bridge.py
-│   └── **init**.py
-├── requirements.txt
-The web-based dashboard serves as the central interface for operators.
-└── README.md
+---
 
 
 ### Core
@@ -75,7 +122,7 @@ The web-based dashboard serves as the central interface for operators.
 ![Matplotlib](https://img.shields.io/badge/Matplotlib-11557C)
 ![Plotly](https://img.shields.io/badge/Plotly-3F4F75?logo=plotly)
 
-### AI / Acceleration (Planned)
+### ML / Acceleration 
 ![PyTorch](https://img.shields.io/badge/PyTorch-EE4C2C?logo=pytorch)
 ![GPU](https://img.shields.io/badge/GPU-RTX%204050-green?logo=nvidia)
 
@@ -118,12 +165,12 @@ streamlit run gui/app.py
 ## 🚧 Current Status
 
 * ✅ Physics-based collision detection
-* ✅ Real satellite TLE ingestion from CelesTrak
-* ✅ ML model planned (architecture ready) 
+* ✅ Realtime satellite TLE ingestion from CelesTrak
+* ✅ ML model implemented for prediction of orbital path
 
-* Reinforcement Learning–based avoidance policy
-* Multi-satellite collision analysis
-* 3D orbital visualization
+* ✅ Reinforcement Learning–based avoidance policy
+* ✅ Multi-satellite collision analysis
+* ✅ 3D orbital visualization
 
 ---
 
@@ -135,5 +182,3 @@ No classified or restricted satellite telemetry is used.
 
 ## 🏁 Note
 This project emphasizes **system design, explainability, and decision support**, demonstrating how collision risks can be evaluated before executing real satellite maneuvers.
-
-```
