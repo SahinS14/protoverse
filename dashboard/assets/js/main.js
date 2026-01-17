@@ -88,19 +88,19 @@ function renderMapSearchResults(data) {
 }
 
 const CLUSTER_COLORS = {
-    0: '#00f3ff', // LEO - Mavi
-    1: '#ffae00', // MEO - Turuncu
-    2: '#bc13fe', // GEO - Mor
-    3: '#0aff60', // Yüksek Eğiklik - Yeşil
-    4: '#ff0055'  // Diğer - Kırmızı
+    0: '#00f3ff', // LEO - Blue
+    1: '#ffae00', // MEO - Orange
+    2: '#bc13fe', // GEO - Purple
+    3: '#0aff60', // High Inclination - Green
+    4: '#ff0055'  // Other - Red
 };
 async function addSatelliteToMap(id, name, forcedColor = null) {
     if (activeLayers[id]) {
-        alert("Bu uydu zaten haritada ekli!");
+        alert("This satellite is already added to the map!");
         return;
     }
 
-    showLoading(true, "Yörünge hesaplanıyor...");
+    showLoading(true, "Calculating orbit...");
     const aiRes = await fetch(`${API_BASE}/ssa/prediction/${id}`);
     const aiData = await aiRes.json();
     const color =
@@ -214,7 +214,7 @@ async function visualizeConjunction(sat1Id, sat1Name, sat2Id, sat2Name, tcaStr) 
     document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
 
     clearMap();
-    showLoading(true, "Çarpışma Senaryosu Oluşturuluyor...");
+    showLoading(true, "Creating Collision Scenario...");
 
     try {
         await addSatelliteToMap(sat1Id, sat1Name, '#00f3ff');
@@ -284,8 +284,8 @@ async function loadSatellites() {
         const data = await res.json();
         renderSatTable(data);
     } catch (e) {
-        console.error("Liste yüklenirken hata:", e);
-        document.getElementById('sat-table-body').innerHTML = `<tr><td colspan="4" class="text-danger">Veri yüklenemedi! API çalışıyor mu?</td></tr>`;
+        console.error("Error loading list:", e);
+        document.getElementById('sat-table-body').innerHTML = `<tr><td colspan="4" class="text-danger">Data could not be loaded! Is the API running?</td></tr>`;
     }
 }
 
@@ -305,7 +305,7 @@ function renderSatTable(data) {
     const tbody = document.getElementById('sat-table-body');
     tbody.innerHTML = "";
     if (data.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="4" class="text-center">Kayıt bulunamadı.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="4" class="text-center">No records found.</td></tr>`;
         return;
     }
     data.forEach(s => {
@@ -340,11 +340,11 @@ function switchAlertType(type) {
     if (type === 'COLLISION') {
         card.className = "card-glass border-danger border-opacity-25";
         headerText.className = "card-header-glass text-danger";
-        headerText.innerHTML = '<span><i class="fas fa-exclamation-triangle me-2"></i>Kritik Yakınlaşmalar</span>';
+        headerText.innerHTML = '<span><i class="fas fa-exclamation-triangle me-2"></i>Critical Approaches</span>';
     } else {
         card.className = "card-glass border-info border-opacity-25";
         headerText.className = "card-header-glass text-info";
-        headerText.innerHTML = '<span><i class="fas fa-link me-2"></i>Tespit Edilen Formasyon/Docking</span>';
+        headerText.innerHTML = '<span><i class="fas fa-link me-2"></i>Detected Formation/Docking</span>';
     }
     loadAlerts();
 }
@@ -357,7 +357,7 @@ async function loadAlerts() {
         tbody.innerHTML = "";
 
         if (data.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="6" class="text-center py-3">Bu kategoride kayıt bulunamadı.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="6" class="text-center py-3">No records found in this category.</td></tr>`;
             return;
         }
 
@@ -461,7 +461,7 @@ async function calculateManeuver() {
 }
 
 async function updateTLEs() {
-    showLoading(true, "Celestrak Güncelleniyor...");
+    showLoading(true, "Celestrak data retrieving");
     try {
         const res = await fetch(`${API_BASE}/tle/refresh`, { method: 'POST' });
         const data = await res.json();

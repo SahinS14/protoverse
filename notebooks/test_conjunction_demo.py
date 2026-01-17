@@ -15,10 +15,11 @@ fetch_and_store()
 
 conn = get_conn()
 cur = conn.cursor()
+
 cur.execute("SELECT id, sat_name, line1, line2 FROM raw_tles WHERE sat_name LIKE '%ISS%' OR sat_name LIKE '%ZARYA%' LIMIT 2")
 rows = cur.fetchall()
 if len(rows) < 2:
-    print("En az 2 uydu bulunmalı, seçiminizi değiştirebilirsiniz")
+    print("At least 2 satellites must be found, you can change your selection")
     exit(1)
 
 satrecs = []
@@ -32,8 +33,9 @@ for row in rows:
     satrecs.append((row["id"], sat))
     states_map[row["id"]] = (r, v)
 
+
 pairs = prune_pairs({k: v[0] for k, v in states_map.items()}, radius_km=1000.0)
-print("candidate pairs:", pairs)
+print("Candidate pairs:", pairs)
 
 for a,b in pairs:
     sat1 = next(x[1] for x in satrecs if x[0]==a)

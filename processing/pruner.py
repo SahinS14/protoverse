@@ -3,13 +3,13 @@ import numpy as np
 from scipy.spatial import cKDTree
 from datetime import datetime, timedelta, timezone
 
-Vec3 = Tuple[float, float, float]  # # 3 Boyutlu Vektör Tipi (x, y, z)
+Vec3 = Tuple[float, float, float]  # 3D Vector Type (x, y, z)
 
 
 def build_kdtree(states: Dict[int, Vec3]) -> cKDTree:
     """
-    Verilen konum listesinden bir KD-Tree veri yapısı oluşturur.
-    KD-Tree, uzayı hiperdüzlemlerle bölerek hızlı arama yapmayı sağlar.
+    Builds a KD-Tree data structure from the given list of positions.
+    KD-Tree enables fast search by partitioning space with hyperplanes.
     """
     positions = np.array(list(states.values()))
     tree = cKDTree(positions)
@@ -18,46 +18,46 @@ def build_kdtree(states: Dict[int, Vec3]) -> cKDTree:
 
 def prune_pairs(states: Dict[int, Vec3], radius_km: float = 100.0) -> List[Tuple[int, int]]:
     """
-    Pruning yani Budama işlemi
-    Bu fonksiyon tüm uyduları birbiriyle karşılaştırmak (brute force) yerine,
-    sadece birbirine 'radius_km' kadar yakın olan çiftleri bulur.
-    O(N logN) olarak çalışır. Sadece yakın çiftleri return eder.
+    Pruning operation.
+    Instead of brute-forcing all satellites against each other,
+    this function finds only pairs that are within 'radius_km' of each other.
+    Runs in O(N logN). Returns only close pairs.
     Args:
-        states: {sat_id: (x, y, z)} formatında uyduların anlık konumları.
-        radius_km: Arama yarıçapı (örn. 100km))
+        states: Current positions of satellites in {sat_id: (x, y, z)} format.
+        radius_km: Search radius (e.g., 100km)
 
     Returns:
-        List[Tuple[int, int]]: Çarpışma riski taşıyan aday çiftlerin id listesi.
-        Örn: [(25544, 49044), (12345, 67890)]
+        List[Tuple[int, int]]: List of candidate pairs with collision risk.
+        Example: [(25544, 49044), (12345, 67890)]
     """
 
-    if len(states) < 2:  # Eğer 2'den az uydu varsa karşılaştırma yapılamaz, boş liste dön.
+    if len(states) < 2:  # If there are fewer than 2 satellites, cannot compare, return empty list.
         return []
 
-    # Dictionary yapısını dcipy nin anlayacağı numpy dizilerine çevir
-    # sat_ids listesi ile positions dizisinin indeksleri birebir maplenmeli
+    # Convert dictionary structure to numpy arrays for scipy
+    # sat_ids list and positions array indices must map one-to-one
     sat_ids = list(states.keys())
     positions = np.array([states[s] for s in sat_ids])
 
-    # veri boyutunu kontrol et, n uydu 3 boyutlu uzay
+    # Check data shape, n satellites in 3D space
     if positions.ndim != 2 or positions.shape[0] < 2:
         return []
 
-    # İndeksleme (KD-Tree İnşası)
-    # Uzaydaki noktaları hızlı sorgulanabilir bir ağaç yapısına diziyoruz
-    # bir epoch için tüm uyduların pozisyon haritası (sat_id → (x,y,z))'tir.
-    # Burada pozisyonlar için TEME veya ECEF kullanılabilir. Ama her epoch'da aynı frame kullanıldığına emin olunmalı
+    # Indexing (KD-Tree Construction)
+    # We arrange points in space into a tree structure for fast queries
+    # For one epoch, the position map of all satellites is (sat_id → (x,y,z)).
+    # TEME or ECEF can be used for positions, but ensure the same frame is used for each epoch
 
     tree = cKDTree(positions)
-    pairs = set()  # yarıçap içindeki sorgu çiftleri, tekrar olmasın diye set ile
+    pairs = set()  # pairs within radius, use set to avoid duplicates
 
-    # # Her bir uydu için "Bana x km yakınımdaki komşuları getir" sorusunu soruyoruz
+    # For each satellite, ask "Give me neighbors within x km"
     for i, pos in enumerate(positions):
         idxs = tree.query_ball_point(pos, r=radius_km)
         for j in idxs:
             if j <= i:
-                # j == i ise zaten uydunun kendisidir, kontrole gerek yok
-                # j < i ise biz A,B çiftini bulduysak B,A çiftine bir daha bakmaya gerek yok
+                # j == i is the satellite itself, no need to check
+                # j < i means if we found A,B pair, no need to check B,A again
                 # Bu sayede işlem sayısı yarıya inecektir ve gereksiz kopayalar olmayacaktır
                 continue
             # # İndeksleri gerçek uydu idlerine (NORAD ID) çevirip listeye ekle

@@ -9,10 +9,9 @@ from poliastro.bodies import Earth
 from poliastro.twobody import Orbit
 
 """
-Eğer şu an motorları ateşleyip hız vektörüne X kadar ekleme yapsaydık, 
-TCA anında diğer uyduya ne kadar uzak olurduk? Cevaplamak istediğimiz soru bu.
-scipy.optimize kütüphanesi ile simülasyon fonksiyonu çağırılarak hem hedef mesafeyi hem
-de deltaV yani yakıtı düşük tutan vektörü deneyip bulmayı amaçlıyoruz.
+If we fired the engines now and added X to the velocity vector,
+how far would we be from the other satellite at TCA? This is the question we want to answer.
+By calling the simulation function with scipy.optimize, we aim to find both the target distance and the vector that keeps deltaV (fuel) low.
 """
 
 
@@ -31,8 +30,8 @@ class ManeuverProposal:
 
 def rv_to_orbit(r_km: np.ndarray, v_km_s: np.ndarray, epoch_dt: datetime) -> Orbit:
     """
-    Konum (r) ve Hız (v) vektörlerinden bir 'poliastro.Orbit' nesnesi oluşturur.
-    Manevra sonrası yörüngeyi iki cisim problemi olarak çözmek için kullanılır.
+    Creates a 'poliastro.Orbit' object from position (r) and velocity (v) vectors.
+    Used to solve the post-maneuver orbit as a two-body problem.
     """
     t = Time(epoch_dt.replace(tzinfo=None).strftime('%Y-%m-%dT%H:%M:%S.%f'), format="isot", scale="utc")
     # Vektörleri birimli hale getirip Dünya merkezli yörünge nesnesi oluştur
@@ -41,8 +40,8 @@ def rv_to_orbit(r_km: np.ndarray, v_km_s: np.ndarray, epoch_dt: datetime) -> Orb
 
 def propagate_orbit_to(orbit: Orbit, target_dt: datetime) -> np.ndarray:
     """
-    Verilen bir yörüngeyi (bizim durumumuzda Orbit nesnesini),
-    hedef zamana (target_dt) kadar ilerletir ve yeni konumu döndürür.
+    Propagates a given orbit (Orbit object in our case)
+    to the target time (target_dt) and returns the new position.
     """
     t_target = Time(target_dt.replace(tzinfo=None).strftime('%Y-%m-%dT%H:%M:%S.%f'), format="isot", scale="utc")
     tof = (t_target - orbit.epoch).to(u.s)  # time of flight
@@ -50,40 +49,39 @@ def propagate_orbit_to(orbit: Orbit, target_dt: datetime) -> np.ndarray:
     return np.array(new_orbit.r.to(u.km).value, dtype=float)
 
 
-# Simülasyon Kısmı
 def compute_miss_distance_after_burn(
-        satrec_target, satrec_our, burn_time: datetime,
-        dv_km_s: np.ndarray, tca_time: datetime,
-        propagate_func: Callable[[object, datetime], np.ndarray]
+    satrec_target, satrec_our, burn_time: datetime,
+    dv_km_s: np.ndarray, tca_time: datetime,
+    propagate_func: Callable[[object, datetime], np.ndarray]
 ) -> Tuple[float, float]:
     """
-    Belirli bir DeltaV (dv_km_s) manevrası yapıldığında, TCA anındaki
-    yeni mesafeyi (miss distance) hesaplayan simülasyon fonksiyonudur.
-    * SGP4 ile ateşleme anına git.
-    * Hız vektörüne deltav ekle impulsive maneuver
-    * yeni yörüngeyi Keplerian (poliastro) ile TCA anına ilerlet.
+    Simulation function that calculates the new miss distance at TCA
+    when a specific DeltaV (dv_km_s) maneuver is performed.
+    * Go to the burn time with SGP4.
+    * Add deltav to the velocity vector (impulsive maneuver)
+    * Propagate the new orbit to TCA using Keplerian (poliastro).
     """
 
-    # ateşleme anındaki mevcut konum ve hızın bulunması
-    # hız vektörünü bulmak için 1 saniye arayla iki konum alıp farkını alıyoruz (basit türev)
-    # Not: SGP4 kütüphanesinin kendi hız çıktısı da kullanılabilir ama bu yöntem genel geçerdir.
+    # Find current position and velocity at burn time
+    # To find the velocity vector, take two positions 1 second apart and subtract (simple derivative)
+    # Note: SGP4's own velocity output can also be used, but this method is more general.
     r_b = np.array(propagate_func(satrec_our, burn_time), dtype=float)
     r_b1 = np.array(propagate_func(satrec_our, burn_time + timedelta(seconds=1)), dtype=float)
     v_b = (r_b1 - r_b) / 1.0
 
-    # Manevra v' = v + deltav işlemi
+    # Maneuver v' = v + deltav operation
     v_new = v_b + np.array(dv_km_s, dtype=float)
     orbit_new = rv_to_orbit(r_b, v_new, burn_time)
     r_our_tca = propagate_orbit_to(orbit_new, tca_time)
-    # risk oluşturan diğer uydunun TCA anındaki konumunu bul
-    # dieğr uydu manevra yapmadığı için orijinal SGP4 propagator kullanılır
+    # Find the position of the other (risk) satellite at TCA
+    # The other satellite does not maneuver, so use the original SGP4 propagator
     r_other_tca = np.array(propagate_func(satrec_target, tca_time), dtype=float)
 
-    # iki konum arasındaki öklid mesafesini (miss distance) hesapla
+    # Calculate the Euclidean distance (miss distance) between the two positions
     miss = float(np.linalg.norm(r_other_tca - r_our_tca))
 
-    # Bağıl hız hesabı
-    # TCAdan 1 sn sonrasına bakarak hız vektörlerini tahmin et
+    # Relative velocity calculation
+    # Estimate velocity vectors by looking 1 second after TCA
     dt = 1.0
     r_our_tca_f = propagate_orbit_to(orbit_new, tca_time + timedelta(seconds=dt))
     r_other_tca_f = np.array(propagate_func(satrec_target, tca_time + timedelta(seconds=dt)), dtype=float)
@@ -92,56 +90,55 @@ def compute_miss_distance_after_burn(
     return miss, rel_vel
 
 
-# Optimizasyon fonksiyonu
 def find_minimal_dv(
-        satrec_target,
-        satrec_our,
-        burn_time: datetime,
-        tca_time: datetime,
-        propagate_func: Callable[[object, datetime], np.ndarray],
-        target_miss_km: float = 2.0,  # hedeflenen güvenli mesafe (örn: 2 km)
-        dv_bound_km_s: float = 0.001,  # izin verilen max deltav
-        penalty_lambda: float = 1e6,  # ceza katsayısı
-        verbose: bool = False
+    satrec_target,
+    satrec_our,
+    burn_time: datetime,
+    tca_time: datetime,
+    propagate_func: Callable[[object, datetime], np.ndarray],
+    target_miss_km: float = 2.0,  # target safe distance (e.g., 2 km)
+    dv_bound_km_s: float = 0.001,  # allowed max deltav
+    penalty_lambda: float = 1e6,  # penalty coefficient
+    verbose: bool = False
 ) -> ManeuverProposal:
     """
-    Hedeflenen 'miss distance'ı sağlamak için gerekli en küçük DeltaV vektörünü bulur.
-    Kısıtlanmamış optimizasyon yöntemini uygular.
+    Finds the minimum DeltaV vector required to achieve the target 'miss distance'.
+    Applies unconstrained optimization method.
     """
 
-    # Amaç Fonksiyonu
-    # Optimizer bu fonksiyonun döndürdüğü değeri sıfıra yaklaştırmaya çalışacak
+    # Objective Function
+    # The optimizer will try to bring the value returned by this function close to zero
     def obj_func(dv_flat):
         dv = np.array(dv_flat)  # anlık deltav değeri
-        # simülasyonu çalıştır, manevra yapılırsa yeni mesafe ne olur ona bak
+        # Run the simulation, check what the new distance will be if maneuver is performed
         miss, _ = compute_miss_distance_after_burn(
             satrec_target, satrec_our, burn_time, dv, tca_time, propagate_func
         )
-        # Maliyet
+        # Cost
         norm = float(np.linalg.norm(dv))
 
-        # Ceza
-        # Hedef mesafenin altındaysak devasa ceza uygula
+        # Penalty
+        # If below the target distance, apply a huge penalty
         # Penalty = λ * max(0, Target - Miss) ^ 2
-        # Eğer miss > target ise (güvendeyiz), max(0, negatif) -> 0 olur, ceza eklenmez.
-        # Sadece yakıt maliyeti (norm) minimize edilir.
+        # If miss > target (safe), max(0, negative) -> 0, no penalty added.
+        # Only fuel cost (norm) is minimized.
         penalty = penalty_lambda * max(0.0, (target_miss_km - miss)) ** 2
         return norm + penalty
 
-    # Başlangıç tahmini (0,0,0) - Hiç manevra yapmama durumu
+    # Initial guess (0,0,0) - No maneuver
     x0 = np.zeros(3, dtype=float)
-    # Arama sınırları (Bounds): Delta-V her eksende max 'dv_bound_km_s' olabilir.
+    # Search bounds: Delta-V can be max 'dv_bound_km_s' in each axis.
     bounds = [(-dv_bound_km_s, dv_bound_km_s)] * 3
 
-    # OPTIMIZASYON:
+    # OPTIMIZATION:
     try:
-        # L-BFGS-B: Sınırlandırılmış (Box-constrained) optimizasyon algoritması
+        # L-BFGS-B: Box-constrained optimization algorithm
         res = minimize(
             obj_func,
             x0,
             bounds=bounds,
             method="L-BFGS-B",
-            # ftol: Fonksiyon toleransı. Hassasiyet ile hız arasındaki denge.
+            # ftol: Function tolerance. Balance between precision and speed.
             options={"ftol": 1e-9, "maxiter": 1000}
         )
     except Exception as e:
@@ -151,14 +148,14 @@ def find_minimal_dv(
             predicted_rel_vel_km_s=0.0, success=False, message=f"Optimizer Error: {str(e)}"
         )
 
-    # optimizasyon tammalandı en iyi sonucu alalım
+    # Optimization completed, get the best result
     dv_opt = np.array(res.x, dtype=float)
-    # bu en iyi sonuçla son bir kez simülasyon yapıp kesin değerleri al
+    # With this best result, run the simulation one last time to get final values
     miss_opt, relv_opt = compute_miss_distance_after_burn(
         satrec_target, satrec_our, burn_time, dv_opt, tca_time, propagate_func
     )
 
-    # Bulunan mesafe hedefe (tolerans dahilinde) ulaştı mı?
+    # Did the found distance reach the target (within tolerance)?
     is_success = miss_opt >= (target_miss_km - 0.001)
 
     return ManeuverProposal(

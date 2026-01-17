@@ -23,7 +23,7 @@ async def refresh_tles():
     """Celestraktan TLE verilerini çeker ve veritabanını günceller."""
     try:
         count = tle_service.update_tles_from_source()
-        return {"message": "TLE verileri başarıyla yüklendi", "count": count}
+        return {"message": "TLE data successfully loaded", "count": count}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

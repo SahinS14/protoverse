@@ -3,9 +3,9 @@ from skyfield.timelib import Time
 import numpy as np
 from datetime import datetime, timezone, timedelta
 
-# Test Edilecek TLE'ler ---
-# sat1 = 25544 (ISS ZARYA)
-# sat2 = 49044 (ISS NAUKA)
+ # TLEs to be tested ---
+ # sat1 = 25544 (ISS ZARYA)
+ # sat2 = 49044 (ISS NAUKA)
 tca_str = "2025-12-02T05:44:53.98501Z"
 tle_iss_zarya = [
     'ISS (ZARYA)',
@@ -21,25 +21,25 @@ tle_iss_nauka = [
 
 def verify_conjunction(tle1, tle2, tca_utc_str):
     """
-    Verilen TLE'ler ve tahmini TCA zamanı etrafında yörünge yayılımı yapar
-    ve minimum mesafeyi (miss distance) hesaplar.
+    Propagates orbits around the given TLEs and estimated TCA time,
+    and calculates the minimum distance (miss distance).
     """
     ts = load.timescale()
 
-    # TLE'leri EarthSatellite nesnelerine dönüştür
+    # Convert TLEs to EarthSatellite objects
     sat1 = EarthSatellite(tle1[1], tle1[2], tle1[0], ts)
     sat2 = EarthSatellite(tle2[1], tle2[2], tle2[0], ts)
 
-    # Zaman adımlarını oluştur (1 saniyelik adımlar)
-    # Skyfield zaman nesnesi oluştur
-    # TCA zamanını ve etrafındaki zaman aralığını tanımla
+    # Create time steps (1-second intervals)
+    # Create Skyfield time object
+    # Define TCA time and surrounding time interval
     tca_dt = datetime.strptime(tca_utc_str, "%Y-%m-%dT%H:%M:%S.%fZ").replace(tzinfo=timezone.utc)
 
-    # TCA'nın 5 dakika öncesinden 5 dakika sonrasına kadar her saniye hesapla
+    # Calculate every second from 5 minutes before to 5 minutes after TCA
     start_dt = tca_dt - timedelta(minutes=5)
     end_dt = tca_dt + timedelta(minutes=5)
 
-    # 1 saniyelik adımlarla tüm zaman noktalarını oluşturun
+    # Create all time points at 1-second intervals
     times_dt = []
     current_time = start_dt
     while current_time <= end_dt:
@@ -47,43 +47,43 @@ def verify_conjunction(tle1, tle2, tca_utc_str):
         current_time += timedelta(seconds=1)
 
     if not times_dt:
-        print("Hata: Zaman aralığı oluşturulamadı.")
+        print("Error: Time interval could not be created.")
         return
 
-    # Oluşturulan tüm datetime nesnelerini tek bir Skyfield zaman nesnesine dönüştürün
+    # Convert all created datetime objects to a single Skyfield time object
     times = ts.utc(times_dt)
 
-    # Pozisyonları hesapla
-    # Geocentric pozisyonlar (km cinsinden)
+    # Calculate positions
+    # Geocentric positions (in km)
     p1 = sat1.at(times).position.km
     p2 = sat2.at(times).position.km
 
-    # Aralarındaki vektör farkını bul
+    # Find the vector difference between them
     difference = p1 - p2
 
-    # Her an için mesafeyi hesapla
+    # Calculate the distance for each moment
     distances_km = np.sqrt(np.sum(difference ** 2, axis=0))
 
-    # Minimum mesafeyi ve zaman indeksini bul
+    # Find the minimum distance and time index
     min_distance_km = np.min(distances_km)
     min_index = np.argmin(distances_km)
 
-    # Minimum mesafenin gerçekleştiği zamanı bul
+    # Find the time when the minimum distance occurs
     tca_recalculated = times[min_index]
 
-    print(f"--- Doğrulama Sonuçları ({tle1[0]} vs {tle2[0]}) ---")
-    print(f"Orijinal TCA (Çıktı): {tca_str}")
-    print(f"Orijinal Miss Distance:   {0.005401871371767645:.6f} km")
+    print(f"--- Verification Results ({tle1[0]} vs {tle2[0]}) ---")
+    print(f"Original TCA (Output): {tca_str}")
+    print(f"Original Miss Distance:   {0.005401871371767645:.6f} km")
     print("-" * 50)
-    print(f"Hesaplanan Minimum Mesafe (SGP4): {min_distance_km:.6f} km")
-    print(f"Hesaplanan TCA (UTC):           {tca_recalculated.utc_strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]} UTC")
+    print(f"Calculated Minimum Distance (SGP4): {min_distance_km:.6f} km")
+    print(f"Calculated TCA (UTC):           {tca_recalculated.utc_strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]} UTC")
 
-    # Karşılaştırma
-    tolerance = 0.01  # 10 metre tolerans
+    # Comparison
+    tolerance = 0.01  # 10 meter tolerance
     if np.abs(min_distance_km - 0.00540187) < tolerance:
-        print("\nSonuçlar TUTARLI görünüyor. Hesaplanan mesafe, orijinal çıktıdaki değere çok yakın.")
+        print("\nResults appear CONSISTENT. The calculated distance is very close to the original output value.")
     else:
-        print("\nSonuçlar TUTARSIZ. Hesaplanan mesafe, orijinal çıktıdaki değerden farklı çıktı.")
+        print("\nResults are INCONSISTENT. The calculated distance is different from the original output value.")
 
 
 # Script'i çalıştır

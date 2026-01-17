@@ -1,7 +1,7 @@
 from pathlib import Path
 import sqlite3
 
-# Proje dizin yapısına göre veritabanı yolunu ayarla
+ # Set the database path according to the project directory structure
 DB_PATH = Path(__file__).resolve().parents[2] / "data" / "astm.db"  # AstroGuard database path (legacy name retained for compatibility)
 DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
@@ -16,7 +16,7 @@ def init_db():
     conn = get_conn()
     curr = conn.cursor()
 
-    # TLE Tablosu
+    # TLE Table
     curr.execute("""
         CREATE TABLE IF NOT EXISTS raw_tles (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -29,9 +29,9 @@ def init_db():
         )
     """)
 
-    # Conjunction Alerts Tablosu
-    # Varsayılan değer 'COLLISION'
-    # Docking olayları için 'DOCKING' yazacağız
+    # Conjunction Alerts Table
+    # Default value is 'COLLISION'
+    # For docking events, we will use 'DOCKING'
     curr.execute("""
         CREATE TABLE IF NOT EXISTS conjunction_alerts (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -67,4 +67,4 @@ def init_db():
 
 if __name__ == "__main__":
     init_db()
-    print("Veritabanı tabloları başarıyla oluşturuldu/güncellendi.")
+    print("Database tables created/updated successfully.")

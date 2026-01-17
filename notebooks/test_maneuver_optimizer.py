@@ -43,16 +43,15 @@ v = v2 - v1
 tstar = - (r.dot(v)) / (v.dot(v))
 tca_est = now + timedelta(seconds=tstar)
 
-print("Tahmini TCA (analitik yöntemle hesaplanmıştır):", tca_est.isoformat())
-# burn_timeı TCA'dan biraz önce seçmeliyiz, örneğin 600 saniye önce
+print("Estimated TCA (calculated by analytic method):", tca_est.isoformat())
+# burn_time should be chosen a bit before TCA, e.g., 600 seconds before
 burn_time = tca_est - timedelta(seconds=600)
 print("Burn time:", burn_time.isoformat())
-#  target_miss_km=1.0 için optimizer
+# optimizer for target_miss_km=1.0
 proposal = find_minimal_dv(satrec2, satrec1, burn_time, tca_est, propagate_satrec_single, target_miss_km=1.0, dv_bound_km_s=0.005, penalty_lambda=500.0, verbose=True)
 print("Proposal:", proposal)
 
 """
-Burada elde edilen sonuçların doğru olup olmadığı verification_conjunction_demo.py ile test edilmiştir.
-Sonuçlar tutarlı olarak bulunmuştur. Verilerin doğruluğu SGP4 modeli ile 
-bağımsız bir kütüphane olan 'skyfield' ile test edilip raporlanmıştır.
+The correctness of the results obtained here has been tested with verification_conjunction_demo.py.
+The results have been found to be consistent. The accuracy of the data has been tested and reported using the SGP4 model and an independent library 'skyfield'.
 """
